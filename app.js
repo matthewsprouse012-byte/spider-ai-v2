@@ -1,468 +1,317 @@
 /* =========================================================
    SPIDER-AI V2
-   MAIN APPLICATION
+   MAIN APPLICATION CONTROLLER
 ========================================================= */
 
+const App = {
 
-/* =========================================================
-   ELEMENTS
-========================================================= */
-
-const camera = document.getElementById("camera");
-
-const startButton = document.getElementById("startButton");
-
-const systemStatus =
-    document.getElementById("systemStatus");
-
-const statusIndicator =
-    document.getElementById("statusIndicator");
-
-const cameraStatus =
-    document.getElementById("cameraStatus");
-
-const aiStatus =
-    document.getElementById("aiStatus");
-
-const depthStatus =
-    document.getElementById("depthStatus");
-
-const batteryDisplay =
-    document.getElementById("battery");
-
-const objectName =
-    document.getElementById("objectName");
-
-const confidence =
-    document.getElementById("confidence");
-
-const targetText =
-    document.getElementById("targetText");
-
-const distance =
-    document.getElementById("distance");
-
-const distanceMode =
-    document.getElementById("distanceMode");
-
-const voiceStatus =
-    document.getElementById("voiceStatus");
-
-const detectionBox =
-    document.getElementById("detectionBox");
-
-const detectionLabel =
-    document.getElementById("detectionLabel");
+    started: false,
 
 
-/* =========================================================
-   APPLICATION STATE
-========================================================= */
+    /* =====================================================
+       INITIALIZE
+    ===================================================== */
 
-const state = {
+    initialize() {
 
-    cameraRunning: false,
+        console.log("SPIDER-AI V2 starting...");
 
-    aiRunning: false,
 
-    voiceAvailable: false,
+        // Connect the camera to the vision system.
 
-    batteryAvailable: false
+        Vision.initialize(
+            document.getElementById("camera")
+        );
+
+
+        // Initialize the distance system.
+
+        Distance.initialize();
+
+
+        // Initialize voice.
+
+        Voice.initialize();
+
+
+        // Initialize the AI brain.
+
+        SpiderAI.initialize();
+
+
+        // Show initial system state.
+
+        HUD.setSystemStatus("READY");
+
+        HUD.setCameraStatus("OFF");
+
+        HUD.setAIStatus("ONLINE");
+
+        HUD.setDepthStatus("OFF");
+
+        HUD.setTarget("SYSTEM READY");
+
+
+        console.log(
+            "SPIDER-AI V2 initialized."
+        );
+
+    },
+
+
+    /* =====================================================
+       START SYSTEM
+    ===================================================== */
+
+    async start() {
+
+        if (this.started) {
+            return;
+        }
+
+
+        HUD.setSystemStatus(
+            "STARTING"
+        );
+
+
+        HUD.setTarget(
+            "STARTING SYSTEM"
+        );
+
+
+        // Start the phone camera.
+
+        const cameraStarted =
+            await this.startCamera();
+
+
+        if (!cameraStarted) {
+
+            HUD.setSystemStatus(
+                "CAMERA ERROR"
+            );
+
+            HUD.setTarget(
+                "CAMERA FAILED"
+            );
+
+            return;
+
+        }
+
+
+        // Start the vision pipeline.
+
+        Vision.start();
+
+
+        // System is now running.
+
+        this.started = true;
+
+
+        HUD.setSystemStatus(
+            "ONLINE"
+        );
+
+
+        HUD.setCameraStatus(
+            "ON"
+        );
+
+
+        HUD.setAIStatus(
+            "READY"
+        );
+
+
+        HUD.setTarget(
+            "VISION READY"
+        );
+
+
+        document.getElementById(
+            "startButton"
+        ).textContent =
+            "SPIDER-AI ACTIVE";
+
+
+        console.log(
+            "SPIDER-AI is online."
+        );
+
+    },
+
+
+    /* =====================================================
+       CAMERA
+    ===================================================== */
+
+    async startCamera() {
+
+        if (
+            !navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia
+        ) {
+
+            console.error(
+                "Camera API unavailable."
+            );
+
+            return false;
+
+        }
+
+
+        try {
+
+            const stream =
+                await navigator.mediaDevices
+                    .getUserMedia({
+
+                        video: {
+
+                            facingMode: {
+                                ideal:
+                                    SPIDER_CONFIG
+                                        .camera
+                                        .preferredFacingMode
+                            }
+
+                        },
+
+                        audio:
+                            SPIDER_CONFIG
+                                .camera
+                                .audio
+
+                    });
+
+
+            const camera =
+                document.getElementById(
+                    "camera"
+                );
+
+
+            camera.srcObject =
+                stream;
+
+
+            await camera.play();
+
+
+            return true;
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "Camera error:",
+                error
+            );
+
+            return false;
+
+        }
+
+    },
+
+
+    /* =====================================================
+       STOP SYSTEM
+    ===================================================== */
+
+    stop() {
+
+        const camera =
+            document.getElementById(
+                "camera"
+            );
+
+
+        if (camera.srcObject) {
+
+            camera.srcObject
+                .getTracks()
+                .forEach(
+                    track => track.stop()
+                );
+
+        }
+
+
+        camera.srcObject =
+            null;
+
+
+        Vision.stop();
+
+
+        this.started =
+            false;
+
+
+        HUD.setSystemStatus(
+            "READY"
+        );
+
+
+        HUD.setCameraStatus(
+            "OFF"
+        );
+
+
+        HUD.setAIStatus(
+            "STANDBY"
+        );
+
+
+        HUD.setTarget(
+            "SYSTEM READY"
+        );
+
+
+        document.getElementById(
+            "startButton"
+        ).textContent =
+            "START SPIDER-AI";
+
+    }
 
 };
 
 
 /* =========================================================
-   INITIAL STATE
+   START BUTTON
 ========================================================= */
 
-function initializeSystem() {
+document
+    .getElementById("startButton")
+    .addEventListener(
+        "click",
+        async () => {
 
-    systemStatus.textContent = "READY";
+            if (!App.started) {
 
-    cameraStatus.textContent = "OFF";
+                await App.start();
 
-    aiStatus.textContent = "STANDBY";
+            }
 
-    depthStatus.textContent = "OFF";
+            else {
 
-    objectName.textContent = "STANDBY";
+                App.stop();
 
-    confidence.textContent =
-        "CONFIDENCE: --";
-
-    distance.textContent = "--";
-
-    distanceMode.textContent =
-        "SENSOR: NOT CONNECTED";
-
-    targetText.textContent =
-        "SYSTEM READY";
-
-}
-
-
-/* =========================================================
-   CAMERA
-========================================================= */
-
-async function startCamera() {
-
-    if (!navigator.mediaDevices ||
-        !navigator.mediaDevices.getUserMedia) {
-
-        systemStatus.textContent =
-            "CAMERA UNSUPPORTED";
-
-        return;
-
-    }
-
-
-    try {
-
-        const stream =
-            await navigator.mediaDevices.getUserMedia({
-
-                video: {
-
-                    facingMode: {
-                        ideal: "environment"
-                    }
-
-                },
-
-                audio: false
-
-            });
-
-
-        camera.srcObject = stream;
-
-
-        await camera.play();
-
-
-        state.cameraRunning = true;
-
-
-        cameraStatus.textContent = "ON";
-
-        systemStatus.textContent = "ONLINE";
-
-        targetText.textContent =
-            "CAMERA ACTIVE";
-
-
-        statusIndicator.style.background =
-            "white";
-
-
-        startButton.textContent =
-            "SPIDER-AI ACTIVE";
-
-
-        /*
-         * The AI system will be connected
-         * in the next stage.
-         */
-
-        aiStatus.textContent =
-            "READY";
-
-
-        /*
-         * We do not claim that depth
-         * is available.
-         */
-
-        depthStatus.textContent =
-            "OFF";
-
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Camera error:",
-            error
-        );
-
-
-        systemStatus.textContent =
-            "CAMERA ERROR";
-
-
-        cameraStatus.textContent =
-            "ERROR";
-
-
-        targetText.textContent =
-            "CAMERA ACCESS FAILED";
-
-
-        startButton.textContent =
-            "TRY CAMERA AGAIN";
-
-    }
-
-}
-
-
-/* =========================================================
-   STOP CAMERA
-========================================================= */
-
-function stopCamera() {
-
-    const stream =
-        camera.srcObject;
-
-
-    if (stream) {
-
-        stream
-            .getTracks()
-            .forEach(track => {
-
-                track.stop();
-
-            });
-
-    }
-
-
-    camera.srcObject = null;
-
-
-    state.cameraRunning = false;
-
-
-    cameraStatus.textContent =
-        "OFF";
-
-
-    systemStatus.textContent =
-        "READY";
-
-
-    targetText.textContent =
-        "CAMERA OFF";
-
-
-    startButton.textContent =
-        "START SPIDER-AI";
-
-}
-
-
-/* =========================================================
-   CAMERA BUTTON
-========================================================= */
-
-startButton.addEventListener(
-    "click",
-    async () => {
-
-        if (!state.cameraRunning) {
-
-            await startCamera();
+            }
 
         }
-
-        else {
-
-            stopCamera();
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   BATTERY
-========================================================= */
-
-async function initializeBattery() {
-
-    /*
-     * Battery Manager is not available
-     * in every mobile browser.
-     */
-
-    if (!("getBattery" in navigator)) {
-
-        batteryDisplay.textContent =
-            "--%";
-
-        return;
-
-    }
-
-
-    try {
-
-        const battery =
-            await navigator.getBattery();
-
-
-        state.batteryAvailable =
-            true;
-
-
-        function updateBattery() {
-
-            const percentage =
-                Math.round(
-                    battery.level * 100
-                );
-
-
-            batteryDisplay.textContent =
-                percentage + "%";
-
-        }
-
-
-        updateBattery();
-
-
-        battery.addEventListener(
-            "levelchange",
-            updateBattery
-        );
-
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Battery error:",
-            error
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   VOICE SUPPORT
-========================================================= */
-
-function initializeVoice() {
-
-    if ("speechSynthesis" in window) {
-
-        state.voiceAvailable =
-            true;
-
-        voiceStatus.textContent =
-            "READY";
-
-    }
-
-    else {
-
-        voiceStatus.textContent =
-            "NOT AVAILABLE";
-
-    }
-
-}
-
-
-/* =========================================================
-   VOICE FUNCTION
-========================================================= */
-
-function speak(message) {
-
-    if (!state.voiceAvailable) {
-
-        return;
-
-    }
-
-
-    const speech =
-        new SpeechSynthesisUtterance(
-            message
-        );
-
-
-    speech.rate = 1;
-
-    speech.pitch = 1;
-
-
-    window.speechSynthesis.cancel();
-
-    window.speechSynthesis.speak(
-        speech
-    );
-
-}
-
-
-/* =========================================================
-   DEMO TARGET
-========================================================= */
-
-function showDemoTarget() {
-
-    /*
-     * This is only a visual test.
-     *
-     * It is NOT real AI detection.
-     */
-
-    detectionBox.classList.remove(
-        "hidden"
     );
 
 
-    detectionLabel.textContent =
-        "VISION TEST";
-
-
-    objectName.textContent =
-        "VISION READY";
-
-
-    confidence.textContent =
-        "CONFIDENCE: TEST";
-
-
-    targetText.textContent =
-        "VISION SYSTEM READY";
-
-
-    speak(
-        "Spider AI vision system ready"
-    );
-
-}
-
-
 /* =========================================================
-   SYSTEM STARTUP
+   STARTUP
 ========================================================= */
 
-initializeSystem();
-
-initializeBattery();
-
-initializeVoice();
-
-
-/* =========================================================
-   DEBUG MESSAGE
-========================================================= */
-
-console.log(
-    "SPIDER-AI V2 initialized"
-);
+App.initialize();
