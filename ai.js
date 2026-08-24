@@ -1,39 +1,28 @@
-/* =========================================================
-   SPIDER-AI V2
-   AI CORE
-========================================================= */
-
-const SpiderAI = {
+window.SpiderAI = {
 
     online: false,
 
     currentTarget: null,
 
-    lastCommand: null,
-
-
-    /* =====================================================
-       INITIALIZE
-    ===================================================== */
 
     initialize() {
 
         this.online = true;
 
-        HUD.setAIStatus("ONLINE");
+        HUD.setAIStatus(
+            "READY"
+        );
 
         console.log(
-            "SPIDER-AI core initialized."
+            "AI CORE: online"
         );
 
     },
 
 
-    /* =====================================================
-       RECEIVE VISION DATA
-    ===================================================== */
-
-    processDetections(detections) {
+    processDetections(
+        detections
+    ) {
 
         if (!this.online) {
             return;
@@ -41,11 +30,12 @@ const SpiderAI = {
 
 
         if (
-            !Array.isArray(detections) ||
+            !detections ||
             detections.length === 0
         ) {
 
-            this.currentTarget = null;
+            this.currentTarget =
+                null;
 
             HUD.hideDetection();
 
@@ -60,16 +50,39 @@ const SpiderAI = {
             Distance.clear();
 
             return;
+
         }
 
 
-        /*
-         * Choose the highest-confidence
-         * detection.
-         */
+        const valid =
+            detections.filter(
+                detection =>
+                    detection.confidence >=
+                    SPIDER_CONFIG
+                        .vision
+                        .confidenceThreshold
+            );
+
+
+        if (valid.length === 0) {
+
+            HUD.hideDetection();
+
+            HUD.setObject(
+                "UNCERTAIN"
+            );
+
+            HUD.setTarget(
+                "ANALYZING"
+            );
+
+            return;
+
+        }
+
 
         const target =
-            detections.reduce(
+            valid.reduce(
                 (best, item) => {
 
                     if (!best) {
@@ -86,23 +99,19 @@ const SpiderAI = {
             );
 
 
-        if (!target) {
-            return;
-        }
-
-
         this.currentTarget =
             target;
 
 
         HUD.setObject(
-            target.name,
+            target.name.toUpperCase(),
             target.confidence
         );
 
 
         HUD.showDetection(
-            target.name
+            target.name.toUpperCase(),
+            target.box
         );
 
 
@@ -112,60 +121,29 @@ const SpiderAI = {
         );
 
 
-        /*
-         * Distance is handled separately.
-         * We don't invent a number here.
-         */
-
-        if (
-            target.distance !== undefined
-        ) {
-
-            if (
-                Distance.mode === "estimate"
-            ) {
-
-                Distance.setEstimatedDistance(
-                    target.distance
-                );
-
-            }
-
-        }
+        console.log(
+            "AI TARGET:",
+            target.name,
+            target.confidence
+        );
 
     },
 
 
-    /* =====================================================
-       VOICE COMMANDS
-    ===================================================== */
-
     handleCommand(command) {
 
-        if (!command) {
-            return;
-        }
+        if (!command) return;
 
 
         const text =
-            command
-                .toLowerCase()
-                .trim();
-
-
-        this.lastCommand =
-            text;
+            command.toLowerCase();
 
 
         console.log(
-            "AI command:",
-            text
+            "AI COMMAND:",
+            command
         );
 
-
-        /*
-         * Basic commands.
-         */
 
         if (
             text.includes("what do you see") ||
@@ -175,6 +153,7 @@ const SpiderAI = {
             this.describeTarget();
 
             return;
+
         }
 
 
@@ -186,6 +165,7 @@ const SpiderAI = {
             this.describeDistance();
 
             return;
+
         }
 
 
@@ -193,42 +173,32 @@ const SpiderAI = {
             text.includes("status")
         ) {
 
-            this.describeStatus();
+            Voice.speak(
+                "Spider AI is online."
+            );
 
             return;
-        }
 
-
-        if (
-            text.includes("stop")
-        ) {
-
-            this.stop();
-
-            return;
         }
 
 
         Voice.speak(
-            "I don't have a command for that yet."
+            "I heard " + command
         );
 
     },
 
-
-    /* =====================================================
-       DESCRIBE TARGET
-    ===================================================== */
 
     describeTarget() {
 
         if (!this.currentTarget) {
 
             Voice.speak(
-                "I don't currently have a detected target."
+                "I don't currently see a target."
             );
 
             return;
+
         }
 
 
@@ -238,25 +208,21 @@ const SpiderAI = {
 
         const confidence =
             Math.round(
-                this.currentTarget.confidence *
-                100
+                this.currentTarget
+                    .confidence * 100
             );
 
 
         Voice.speak(
             "I see a " +
             name +
-            ". Confidence " +
+            " with " +
             confidence +
-            " percent."
+            " percent confidence."
         );
 
     },
 
-
-    /* =====================================================
-       DESCRIBE DISTANCE
-    ===================================================== */
 
     describeDistance() {
 
@@ -265,104 +231,23 @@ const SpiderAI = {
         ) {
 
             Voice.speak(
-                "I don't have a reliable distance measurement."
+                "I don't have a reliable distance measurement yet."
             );
 
             return;
-        }
-
-
-        const value =
-            Distance.lastDistance;
-
-
-        const unit =
-            Distance.unit;
-
-
-        if (
-            Distance.mode === "estimate"
-        ) {
-
-            Voice.speak(
-                "The estimated distance is " +
-                value.toFixed(1) +
-                " " +
-                unit
-            );
-
-            return;
-        }
-
-
-        Voice.speak(
-            "The measured distance is " +
-            value.toFixed(1) +
-            " " +
-            unit
-        );
-
-    },
-
-
-    /* =====================================================
-       SYSTEM STATUS
-    ===================================================== */
-
-    describeStatus() {
-
-        const camera =
-            document.getElementById(
-                "cameraStatus"
-            )?.textContent || "unknown";
-
-
-        Voice.speak(
-            "Spider AI is online. Camera " +
-            camera +
-            "."
-        );
-
-    },
-
-
-    /* =====================================================
-       STOP AI
-    ===================================================== */
-
-    stop() {
-
-        this.online = false;
-
-        this.currentTarget = null;
-
-
-        if (
-            typeof Vision !== "undefined"
-        ) {
-
-            Vision.stop();
 
         }
 
 
-        Distance.clear();
-
-
-        HUD.setAIStatus(
-            "STANDBY"
-        );
-
-
-        HUD.setTarget(
-            "AI STOPPED"
-        );
-
-
         Voice.speak(
-            "Spider AI stopped."
+            "The distance is " +
+            Distance.lastDistance
+                .toFixed(1) +
+            " meters."
         );
 
     }
 
 };
+
+console.log("AI CORE: loaded");
