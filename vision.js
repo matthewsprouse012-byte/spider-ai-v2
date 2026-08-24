@@ -1,57 +1,124 @@
-/* =========================================================
-   SPIDER-AI V2
-   VISION SYSTEM
-========================================================= */
-
-const Vision = {
+window.Vision = {
 
     video: null,
 
-    running: false,
-
     model: null,
 
-    detections: [],
+    running: false,
+
+    loading: false,
 
 
-    /* =====================================================
-       INITIALIZE
-    ===================================================== */
+    async initialize(video) {
 
-    initialize(videoElement) {
+        this.video = video;
 
-        this.video = videoElement;
 
         if (!this.video) {
 
             console.error(
-                "Vision: camera element not found."
+                "VISION: camera missing"
             );
 
             return false;
+
         }
 
-        console.log(
-            "Vision system initialized."
-        );
 
-        return true;
+        if (
+            typeof cocoSsd ===
+            "undefined"
+        ) {
+
+            console.error(
+                "VISION: COCO-SSD missing"
+            );
+
+            HUD.setAIStatus(
+                "ERROR"
+            );
+
+            HUD.setTarget(
+                "MODEL NOT LOADED"
+            );
+
+            return false;
+
+        }
+
+
+        try {
+
+            this.loading = true;
+
+            HUD.setAIStatus(
+                "LOADING"
+            );
+
+            HUD.setTarget(
+                "LOADING AI MODEL"
+            );
+
+
+            this.model =
+                await cocoSsd.load();
+
+
+            this.loading = false;
+
+
+            HUD.setAIStatus(
+                "READY"
+            );
+
+            HUD.setTarget(
+                "VISION READY"
+            );
+
+
+            console.log(
+                "VISION: model ready"
+            );
+
+
+            return true;
+
+        } catch (error) {
+
+            this.loading = false;
+
+            console.error(
+                "VISION MODEL ERROR:",
+                error
+            );
+
+
+            HUD.setAIStatus(
+                "ERROR"
+            );
+
+            HUD.setTarget(
+                "MODEL ERROR"
+            );
+
+
+            return false;
+
+        }
+
     },
 
 
-    /* =====================================================
-       START VISION
-    ===================================================== */
-
     start() {
 
-        if (!this.video) {
+        if (!this.model) {
 
             console.error(
-                "Vision: not initialized."
+                "VISION: no model"
             );
 
             return;
+
         }
 
 
@@ -59,43 +126,31 @@ const Vision = {
 
 
         HUD.setAIStatus(
-            "STARTING"
+            "ONLINE"
         );
 
 
         HUD.setTarget(
-            "VISION STARTING"
+            "SCANNING"
         );
 
 
-        /*
-         * The actual AI model will be
-         * loaded in the next stage.
-         */
-
-        this.startProcessing();
-
+        this.scan();
 
     },
 
-
-    /* =====================================================
-       STOP VISION
-    ===================================================== */
 
     stop() {
 
         this.running = false;
 
-        this.detections = [];
+
+        HUD.hideDetection();
 
 
         HUD.setAIStatus(
             "STANDBY"
         );
-
-
-        HUD.hideDetection();
 
 
         HUD.setObject(
@@ -110,39 +165,7 @@ const Vision = {
     },
 
 
-    /* =====================================================
-       PROCESS CAMERA
-    ===================================================== */
-
-    startProcessing() {
-
-        if (!this.running) {
-            return;
-        }
-
-
-        /*
-         * We use requestAnimationFrame so
-         * the vision system can eventually
-         * analyze the camera frames.
-         */
-
-        requestAnimationFrame(
-            () => {
-
-                this.processFrame();
-
-            }
-        );
-
-    },
-
-
-    /* =====================================================
-       PROCESS ONE FRAME
-    ===================================================== */
-
-    processFrame() {
+    async scan() {
 
         if (!this.running) {
             return;
@@ -154,134 +177,69 @@ const Vision = {
             this.video.readyState < 2
         ) {
 
-            this.startProcessing();
-
-            return;
-        }
-
-
-        /*
-         * AI object detection will go here.
-         *
-         * We deliberately do NOT invent
-         * detections when the model isn't loaded.
-         */
-
-        if (!this.model) {
-
-            HUD.setAIStatus(
-                "READY"
-            );
-
-
-            HUD.setTarget(
-                "AI MODEL NOT LOADED"
-            );
-
-        }
-
-
-        this.startProcessing();
-
-    },
-
-
-    /* =====================================================
-       SET MODEL
-    ===================================================== */
-
-    setModel(model) {
-
-        this.model = model;
-
-
-        if (model) {
-
-            HUD.setAIStatus(
-                "ONLINE"
-            );
-
-
-            HUD.setTarget(
-                "VISION ACTIVE"
-            );
-
-        }
-
-    },
-
-
-    /* =====================================================
-       RECEIVE DETECTIONS
-    ===================================================== */
-
-    updateDetections(detections) {
-
-        this.detections =
-            detections || [];
-
-
-        if (
-            this.detections.length === 0
-        ) {
-
-            HUD.hideDetection();
-
-            HUD.setObject(
-                "NO TARGET"
-            );
-
-            HUD.setTarget(
-                "SCANNING"
+            setTimeout(
+                () => this.scan(),
+                300
             );
 
             return;
+
         }
 
 
-        /*
-         * Pick the highest-confidence
-         * detection.
-         */
+        try {
 
-        const best =
-            this.detections.reduce(
-                (current, item) => {
+            const predictions =
+                await this.model.detect(
+                    this.video
+                );
 
-                    if (!current) {
-                        return item;
-                    }
 
-                    return item.confidence >
-                        current.confidence
-                        ? item
-                        : current;
+            const detections =
+                predictions.map(
+                    prediction => ({
 
-                },
-                null
+                        name:
+                            prediction.class,
+
+                        confidence:
+                            prediction.score,
+
+                        box:
+                            prediction.bbox
+
+                    })
+                );
+
+
+            SpiderAI.processDetections(
+                detections
             );
 
 
-        if (!best) {
-            return;
+        } catch (error) {
+
+            console.error(
+                "VISION SCAN ERROR:",
+                error
+            );
+
         }
 
 
-        HUD.setObject(
-            best.name,
-            best.confidence
-        );
+        if (this.running) {
 
+            setTimeout(
+                () => this.scan(),
+                SPIDER_CONFIG
+                    .vision
+                    .scanInterval
+            );
 
-        HUD.showDetection(
-            best.name
-        );
-
-
-        HUD.setTarget(
-            "TARGET DETECTED"
-        );
+        }
 
     }
 
 };
+
+console.log("VISION: loaded");
