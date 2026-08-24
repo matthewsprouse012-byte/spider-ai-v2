@@ -1,113 +1,316 @@
-const App = {
+window.App = {
+
     started: false,
 
-    async start() {
-        const button = document.getElementById("startButton");
 
-        button.textContent = "STARTING...";
+    async initialize() {
+
+        console.log(
+            "========================"
+        );
+
+        console.log(
+            "SPIDER-AI V2"
+        );
+
+        console.log(
+            "INITIALIZING"
+        );
+
+        console.log(
+            "========================"
+        );
+
+
+        const camera =
+            document.getElementById(
+                "camera"
+            );
+
+
+        Distance.initialize();
+
+        Voice.initialize();
+
+        SpiderAI.initialize();
+
+
+        HUD.setSystemStatus(
+            "READY"
+        );
+
+        HUD.setCameraStatus(
+            "OFF"
+        );
+
+        HUD.setAIStatus(
+            "READY"
+        );
+
+        HUD.setTarget(
+            "SYSTEM READY"
+        );
+
+
+        console.log(
+            "APP: ready"
+        );
+
+    },
+
+
+    async start() {
+
+        if (this.started) {
+            return;
+        }
+
+
+        const button =
+            document.getElementById(
+                "startButton"
+            );
+
+
+        button.textContent =
+            "STARTING...";
+
+
+        HUD.setSystemStatus(
+            "STARTING"
+        );
+
 
         try {
-            const camera = document.getElementById("camera");
 
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: {
-                        ideal: "environment"
-                    }
-                },
-                audio: false
-            });
+            if (
+                !navigator.mediaDevices ||
+                !navigator.mediaDevices
+                    .getUserMedia
+            ) {
 
-            camera.srcObject = stream;
+                throw new Error(
+                    "Camera API unavailable"
+                );
+
+            }
+
+
+            const stream =
+                await navigator
+                    .mediaDevices
+                    .getUserMedia({
+
+                        video: {
+
+                            facingMode:
+                                {
+                                    ideal:
+                                        "environment"
+                                }
+
+                        },
+
+                        audio: false
+
+                    });
+
+
+            const camera =
+                document.getElementById(
+                    "camera"
+                );
+
+
+            camera.srcObject =
+                stream;
+
+
             await camera.play();
+
+
+            HUD.setCameraStatus(
+                "ON"
+            );
+
+
+            HUD.setSystemStatus(
+                "ONLINE"
+            );
+
+
+            /*
+             * Load the actual AI.
+             */
+
+            const modelReady =
+                await Vision.initialize(
+                    camera
+                );
+
+
+            if (!modelReady) {
+
+                button.textContent =
+                    "AI MODEL ERROR";
+
+                return;
+
+            }
+
+
+            /*
+             * Start AI vision.
+             */
+
+            Vision.start();
+
 
             this.started = true;
 
-            document.getElementById("systemStatus").textContent = "ONLINE";
-            document.getElementById("cameraStatus").textContent = "ON";
-            document.getElementById("aiStatus").textContent = "READY";
-            document.getElementById("targetText").textContent = "CAMERA ACTIVE";
 
-            button.textContent = "SPIDER-AI ACTIVE";
+            button.textContent =
+                "SPIDER-AI ACTIVE";
 
-            console.log("SPIDER-AI camera started.");
+
+            HUD.setTarget(
+                "SCANNING"
+            );
+
+
+            console.log(
+                "SPIDER-AI ACTIVE"
+            );
+
 
         } catch (error) {
 
-            console.error("SPIDER-AI CAMERA ERROR:", error);
+            console.error(
+                "SPIDER-AI START ERROR:",
+                error
+            );
 
-            button.textContent = "CAMERA ERROR";
 
-            document.getElementById("systemStatus").textContent = "ERROR";
-            document.getElementById("targetText").textContent =
-                "CAMERA ACCESS FAILED";
+            HUD.setSystemStatus(
+                "ERROR"
+            );
+
+
+            HUD.setTarget(
+                "START ERROR"
+            );
+
+
+            button.textContent =
+                "TRY AGAIN";
+
         }
+
     },
 
 
     stop() {
 
         const camera =
-            document.getElementById("camera");
+            document.getElementById(
+                "camera"
+            );
+
 
         if (camera.srcObject) {
 
             camera.srcObject
                 .getTracks()
-                .forEach(track => track.stop());
+                .forEach(
+                    track =>
+                        track.stop()
+                );
 
-            camera.srcObject = null;
         }
 
-        this.started = false;
 
-        document.getElementById("systemStatus").textContent = "READY";
-        document.getElementById("cameraStatus").textContent = "OFF";
-        document.getElementById("aiStatus").textContent = "STANDBY";
-        document.getElementById("targetText").textContent = "CAMERA OFF";
+        camera.srcObject =
+            null;
 
-        document.getElementById("startButton").textContent =
+
+        Vision.stop();
+
+
+        this.started =
+            false;
+
+
+        HUD.setSystemStatus(
+            "READY"
+        );
+
+        HUD.setCameraStatus(
+            "OFF"
+        );
+
+        HUD.setAIStatus(
+            "STANDBY"
+        );
+
+        HUD.setTarget(
+            "SYSTEM READY"
+        );
+
+
+        document.getElementById(
+            "startButton"
+        ).textContent =
             "START SPIDER-AI";
+
     }
+
 };
 
 
-window.addEventListener("DOMContentLoaded", () => {
+/* =========================================================
+   BUTTON
+========================================================= */
 
-    const button =
-        document.getElementById("startButton");
+window.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-    if (!button) {
-
-        console.error(
-            "SPIDER-AI ERROR: startButton not found."
-        );
-
-        return;
-    }
+        const button =
+            document.getElementById(
+                "startButton"
+            );
 
 
-    button.addEventListener("click", async () => {
+        if (!button) {
 
-        console.log(
-            "START SPIDER-AI BUTTON PRESSED"
-        );
+            console.error(
+                "APP: start button missing"
+            );
 
-        if (!App.started) {
-
-            await App.start();
-
-        } else {
-
-            App.stop();
+            return;
 
         }
 
-    });
+
+        button.addEventListener(
+            "click",
+            async () => {
+
+                if (!App.started) {
+
+                    await App.start();
+
+                } else {
+
+                    App.stop();
+
+                }
+
+            }
+        );
 
 
-    console.log(
-        "SPIDER-AI V2 READY"
-    );
+        App.initialize();
 
-});
+    }
+);
