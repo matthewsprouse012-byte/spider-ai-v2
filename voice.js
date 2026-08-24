@@ -1,30 +1,10 @@
-/* =========================================================
-   SPIDER-AI V2
-   VOICE SYSTEM
-========================================================= */
-
-const Voice = {
+window.Voice = {
 
     recognition: null,
 
     available: false,
 
-    listening: false,
-
-
     initialize() {
-
-        /*
-         * Speech output
-         */
-
-        const speechAvailable =
-            "speechSynthesis" in window;
-
-
-        /*
-         * Speech recognition varies by browser.
-         */
 
         const Recognition =
             window.SpeechRecognition ||
@@ -36,78 +16,68 @@ const Voice = {
             this.recognition =
                 new Recognition();
 
-            this.recognition.continuous = false;
+            this.recognition.lang =
+                "en-US";
 
-            this.recognition.interimResults = false;
+            this.recognition.continuous =
+                false;
 
-            this.recognition.lang = "en-US";
-
-
-            this.recognition.onstart = () => {
-
-                this.listening = true;
-
-                HUD.setVoiceStatus(
-                    "LISTENING"
-                );
-
-            };
+            this.recognition.interimResults =
+                false;
 
 
-            this.recognition.onend = () => {
-
-                this.listening = false;
-
-                HUD.setVoiceStatus(
-                    "READY"
-                );
-
-            };
-
-
-            this.recognition.onerror =
-                (event) => {
-
-                    console.log(
-                        "Voice recognition:",
-                        event.error
-                    );
-
-                    this.listening = false;
+            this.recognition.onstart =
+                () => {
 
                     HUD.setVoiceStatus(
-                        "ERROR"
+                        "LISTENING"
+                    );
+
+                };
+
+
+            this.recognition.onend =
+                () => {
+
+                    HUD.setVoiceStatus(
+                        "READY"
                     );
 
                 };
 
 
             this.recognition.onresult =
-                (event) => {
+                event => {
 
                     const result =
                         event.results[
                             event.results.length - 1
                         ];
 
-
-                    const text =
-                        result[0].transcript
+                    const command =
+                        result[0]
+                            .transcript
                             .trim();
 
 
-                    console.log(
-                        "Voice command:",
-                        text
+                    SpiderAI.handleCommand(
+                        command
                     );
 
+                };
 
-                    /*
-                     * AI command handling will
-                     * be connected later.
-                     */
 
-                    this.handleCommand(text);
+            this.recognition.onerror =
+                error => {
+
+                    console.log(
+                        "VOICE ERROR:",
+                        error.error
+                    );
+
+                    HUD.setVoiceStatus(
+                        "ERROR"
+                    );
 
                 };
 
@@ -117,40 +87,24 @@ const Voice = {
         }
 
 
-        if (speechAvailable) {
+        HUD.setVoiceStatus(
+            this.available
+                ? "READY"
+                : "UNAVAILABLE"
+        );
 
-            HUD.setVoiceStatus(
-                "READY"
-            );
 
-        } else {
-
-            HUD.setVoiceStatus(
-                "UNAVAILABLE"
-            );
-
-        }
+        console.log(
+            "VOICE: loaded"
+        );
 
     },
 
 
-    startListening() {
+    listen() {
 
         if (!this.recognition) {
-
-            HUD.setVoiceStatus(
-                "NOT SUPPORTED"
-            );
-
             return;
-
-        }
-
-
-        if (this.listening) {
-
-            return;
-
         }
 
 
@@ -158,37 +112,10 @@ const Voice = {
 
             this.recognition.start();
 
-        }
-
-        catch (error) {
+        } catch (error) {
 
             console.log(
-                "Voice start error:",
-                error
-            );
-
-        }
-
-    },
-
-
-    stopListening() {
-
-        if (!this.recognition) {
-            return;
-        }
-
-
-        try {
-
-            this.recognition.stop();
-
-        }
-
-        catch (error) {
-
-            console.log(
-                "Voice stop error:",
+                "VOICE START:",
                 error
             );
 
@@ -199,10 +126,10 @@ const Voice = {
 
     speak(text) {
 
-        if (!("speechSynthesis" in window)) {
-
+        if (
+            !("speechSynthesis" in window)
+        ) {
             return;
-
         }
 
 
@@ -216,11 +143,10 @@ const Voice = {
 
 
         message.rate =
-            SPIDER_CONFIG.voice.speechRate;
-
+            SPIDER_CONFIG.voice.rate;
 
         message.pitch =
-            SPIDER_CONFIG.voice.speechPitch;
+            SPIDER_CONFIG.voice.pitch;
 
 
         window.speechSynthesis.speak(
@@ -232,57 +158,12 @@ const Voice = {
 
     handleCommand(command) {
 
-        const text =
-            command.toLowerCase();
-
-
-        /*
-         * Basic commands for testing.
-         * The AI system will eventually
-         * handle more advanced requests.
-         */
-
-        if (
-            text.includes("hello") ||
-            text.includes("hi")
-        ) {
-
-            this.speak(
-                "Spider AI online."
-            );
-
-            return;
-        }
-
-
-        if (
-            text.includes("status")
-        ) {
-
-            this.speak(
-                "Spider AI system online."
-            );
-
-            return;
-        }
-
-
-        if (
-            text.includes("camera")
-        ) {
-
-            this.speak(
-                "Camera system is active."
-            );
-
-            return;
-        }
-
-
-        this.speak(
-            "I heard you say " + command
+        SpiderAI.handleCommand(
+            command
         );
 
     }
 
 };
+
+console.log("VOICE: loaded");
