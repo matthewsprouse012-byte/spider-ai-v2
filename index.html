@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    >
+
+    <meta name="theme-color" content="#050505">
+
+    <title>SPIDER-AI V2</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main id="app">
+
+        <!-- =====================================================
+             CAMERA
+        ====================================================== -->
+
+        <video
+            id="camera"
+            autoplay
+            playsinline
+            muted
+        ></video>
+
+
+        <!-- =====================================================
+             MAIN HUD
+        ====================================================== -->
+
+        <div id="hud">
+
+
+            <!-- =================================================
+                 TOP BAR
+            ================================================== -->
+
+            <header class="top-bar">
+
+                <div class="system-name">
+                    <div class="logo">
+                        SPIDER-AI
+                    </div>
+
+                    <div class="version">
+                        V2 // MOBILE PROTOTYPE
+                    </div>
+                </div>
+
+
+                <div class="system-status">
+
+                    <span
+                        id="statusIndicator"
+                        class="status-dot"
+                    ></span>
+
+                    <span id="systemStatus">
+                        OFFLINE
+                    </span>
+
+                </div>
+
+            </header>
+
+
+
+            <!-- =================================================
+                 CENTER VISION AREA
+            ================================================== -->
+
+            <section id="visionArea">
+
+
+                <!-- Main targeting frame -->
+
+                <div id="targetFrame">
+
+                    <div class="corner top-left"></div>
+
+                    <div class="corner top-right"></div>
+
+                    <div class="corner bottom-left"></div>
+
+                    <div class="corner bottom-right"></div>
+
+
+                    <!-- Center crosshair -->
+
+                    <div id="crosshair">
+                        +
+                    </div>
+
+
+                    <!-- Target text -->
+
+                    <div id="targetText">
+                        CAMERA OFF
+                    </div>
+
+                </div>
+
+
+                <!-- Object detection box -->
+
+                <div
+                    id="detectionBox"
+                    class="hidden"
+                >
+
+                    <div class="detection-corner top-left"></div>
+
+                    <div class="detection-corner top-right"></div>
+
+                    <div class="detection-corner bottom-left"></div>
+
+                    <div class="detection-corner bottom-right"></div>
+
+
+                    <div id="detectionLabel">
+                        OBJECT
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =================================================
+                 OBJECT INFORMATION
+            ================================================== -->
+
+            <section id="objectPanel">
+
+                <div class="panel-title">
+                    AI VISION
+                </div>
+
+                <div
+                    id="objectName"
+                    class="large-value"
+                >
+                    STANDBY
+                </div>
+
+                <div id="confidence">
+                    CONFIDENCE: --
+                </div>
+
+            </section>
+
+
+
+            <!-- =================================================
+                 DISTANCE INFORMATION
+            ================================================== -->
+
+            <section id="distancePanel">
+
+                <div class="panel-title">
+                    DISTANCE
+                </div>
+
+
+                <div
+                    id="distance"
+                    class="distance-value"
+                >
+                    --
+                </div>
+
+
+                <div class="distance-unit">
+                    METERS
+                </div>
+
+
+                <div id="distanceMode">
+                    SENSOR: NOT CONNECTED
+                </div>
+
+            </section>
+
+
+
+            <!-- =================================================
+                 SYSTEM INFORMATION
+            ================================================== -->
+
+            <section id="systemPanel">
+
+
+                <div class="system-item">
+
+                    <span>
+                        CAMERA
+                    </span>
+
+                    <b id="cameraStatus">
+                        OFF
+                    </b>
+
+                </div>
+
+
+                <div class="system-item">
+
+                    <span>
+                        AI
+                    </span>
+
+                    <b id="aiStatus">
+                        STANDBY
+                    </b>
+
+                </div>
+
+
+                <div class="system-item">
+
+                    <span>
+                        DEPTH
+                    </span>
+
+                    <b id="depthStatus">
+                        OFF
+                    </b>
+
+                </div>
+
+
+                <div class="system-item">
+
+                    <span>
+                        BATTERY
+                    </span>
+
+                    <b id="battery">
+                        --%
+                    </b>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =================================================
+                 VOICE STATUS
+            ================================================== -->
+
+            <section id="voicePanel">
+
+                <span class="panel-title">
+                    VOICE
+                </span>
+
+                <span id="voiceStatus">
+                    READY
+                </span>
+
+            </section>
+
+
+
+            <!-- =================================================
+                 START BUTTON
+            ================================================== -->
+
+            <button
+                id="startButton"
+                type="button"
+            >
+                START SPIDER-AI
+            </button>
+
+
+
+            <!-- =================================================
+                 BOTTOM STATUS BAR
+            ================================================== -->
+
+            <footer id="bottomBar">
+
+                <span>
+                    SPIDER-AI
+                </span>
+
+                <span>
+                    V2.0
+                </span>
+
+                <span>
+                    MOBILE
+                </span>
+
+            </footer>
+
+        </div>
+
+    </main>
+
+
+
+    <!-- =========================================================
+         TENSORFLOW.JS
+         Future object-detection system
+    ========================================================== -->
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"
+    ></script>
+
+
+    <!-- =========================================================
+         SPIDER-AI APPLICATION
+    ========================================================== -->
+
+    <script src="app.js"></script>
+
+</body>
+
+</html>
