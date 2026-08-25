@@ -15,15 +15,23 @@
         content="#050505"
     >
 
-    <title>SPIDER-AI V2</title>
+    <title>SPIDER-AI V2.1</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
 
 </head>
+
 
 <body>
 
 <main id="app">
+
+    <!-- =================================================
+         CAMERA
+    ================================================== -->
 
     <video
         id="camera"
@@ -33,9 +41,16 @@
     ></video>
 
 
+    <!-- =================================================
+         HUD
+    ================================================== -->
+
     <div id="hud">
 
-        <!-- TOP BAR -->
+
+        <!-- =============================================
+             TOP BAR
+        ============================================== -->
 
         <header class="top-bar">
 
@@ -46,10 +61,11 @@
                 </div>
 
                 <div class="version">
-                    V2 // MOBILE
+                    V2.1 // MOBILE
                 </div>
 
             </div>
+
 
             <div class="system-status">
 
@@ -67,20 +83,35 @@
         </header>
 
 
-        <!-- VISION -->
+        <!-- =============================================
+             CAMERA TARGET
+        ============================================== -->
 
         <section id="visionArea">
 
             <div id="targetFrame">
 
-                <div class="corner top-left"></div>
-                <div class="corner top-right"></div>
-                <div class="corner bottom-left"></div>
-                <div class="corner bottom-right"></div>
+                <div
+                    class="corner top-left"
+                ></div>
+
+                <div
+                    class="corner top-right"
+                ></div>
+
+                <div
+                    class="corner bottom-left"
+                ></div>
+
+                <div
+                    class="corner bottom-right"
+                ></div>
+
 
                 <div id="crosshair">
                     +
                 </div>
+
 
                 <div id="targetText">
                     CAMERA OFF
@@ -89,15 +120,29 @@
             </div>
 
 
+            <!-- AI DETECTION BOX -->
+
             <div
                 id="detectionBox"
                 class="hidden"
             >
 
-                <div class="detection-corner top-left"></div>
-                <div class="detection-corner top-right"></div>
-                <div class="detection-corner bottom-left"></div>
-                <div class="detection-corner bottom-right"></div>
+                <div
+                    class="detection-corner top-left"
+                ></div>
+
+                <div
+                    class="detection-corner top-right"
+                ></div>
+
+                <div
+                    class="detection-corner bottom-left"
+                ></div>
+
+                <div
+                    class="detection-corner bottom-right"
+                ></div>
+
 
                 <div id="detectionLabel">
                     OBJECT
@@ -108,13 +153,16 @@
         </section>
 
 
-        <!-- AI PANEL -->
+        <!-- =============================================
+             AI OBJECT PANEL
+        ============================================== -->
 
         <section id="objectPanel">
 
             <span class="panel-title">
                 AI VISION
             </span>
+
 
             <div
                 id="objectName"
@@ -123,6 +171,7 @@
                 STANDBY
             </div>
 
+
             <div id="confidence">
                 CONFIDENCE: --
             </div>
@@ -130,13 +179,16 @@
         </section>
 
 
-        <!-- DISTANCE -->
+        <!-- =============================================
+             DISTANCE PANEL
+        ============================================== -->
 
         <section id="distancePanel">
 
             <span class="panel-title">
                 DISTANCE
             </span>
+
 
             <div
                 id="distance"
@@ -145,9 +197,11 @@
                 --
             </div>
 
+
             <div class="distance-unit">
                 METERS
             </div>
+
 
             <div id="distanceMode">
                 SENSOR: NOT CONNECTED
@@ -156,40 +210,76 @@
         </section>
 
 
-        <!-- SYSTEM -->
+        <!-- =============================================
+             SYSTEM PANEL
+        ============================================== -->
 
         <section id="systemPanel">
 
             <div class="system-item">
-                <span>CAMERA</span>
-                <b id="cameraStatus">OFF</b>
+
+                <span>
+                    CAMERA
+                </span>
+
+                <b id="cameraStatus">
+                    OFF
+                </b>
+
             </div>
 
-            <div class="system-item">
-                <span>AI</span>
-                <b id="aiStatus">STANDBY</b>
-            </div>
 
             <div class="system-item">
-                <span>DEPTH</span>
-                <b id="depthStatus">OFF</b>
+
+                <span>
+                    AI
+                </span>
+
+                <b id="aiStatus">
+                    STANDBY
+                </b>
+
             </div>
 
+
             <div class="system-item">
-                <span>BATTERY</span>
-                <b id="battery">--%</b>
+
+                <span>
+                    DEPTH
+                </span>
+
+                <b id="depthStatus">
+                    OFF
+                </b>
+
+            </div>
+
+
+            <div class="system-item">
+
+                <span>
+                    BATTERY
+                </span>
+
+                <b id="battery">
+                    --%
+                </b>
+
             </div>
 
         </section>
 
 
-        <!-- VOICE -->
+        <!-- =============================================
+             VOICE STATUS
+        ============================================== -->
 
         <section id="voicePanel">
 
             <span class="panel-title">
                 VOICE
             </span>
+
 
             <span id="voiceStatus">
                 READY
@@ -198,63 +288,114 @@
         </section>
 
 
-        <!-- START -->
+        <!-- =============================================
+             CONTROLS
+        ============================================== -->
 
-       <div id="controls">
-
-    <button
-        id="startButton"
-        type="button"
-    >
-        START SPIDER-AI
-    </button>
-
-    <button
-        id="voiceButton"
-        type="button"
-    >
-        🎤 TALK
-    </button>
-
-</div>
+        <div id="controls">
 
 
-        <!-- BOTTOM -->
+            <!-- START BUTTON -->
+
+            <button
+                id="startButton"
+                type="button"
+                class="control-button start-button"
+            >
+
+                <span class="button-icon">
+                    ◉
+                </span>
+
+                <span>
+                    START SPIDER-AI
+                </span>
+
+            </button>
+
+
+            <!-- TALK BUTTON -->
+
+            <button
+                id="voiceButton"
+                type="button"
+                class="control-button talk-button"
+            >
+
+                <span class="button-icon">
+                    🎤
+                </span>
+
+                <span>
+                    TALK TO SPIDER-AI
+                </span>
+
+            </button>
+
+
+        </div>
+
+
+        <!-- =============================================
+             BOTTOM BAR
+        ============================================== -->
 
         <footer id="bottomBar">
 
-            <span>SPIDER-AI</span>
-            <span>V2.0</span>
-            <span>MOBILE</span>
+            <span>
+                SPIDER-AI
+            </span>
+
+            <span>
+                V2.1
+            </span>
+
+            <span>
+                MOBILE
+            </span>
 
         </footer>
 
+
     </div>
+
 
 </main>
 
 
 <!-- =====================================================
      AI LIBRARIES
-===================================================== -->
+====================================================== -->
 
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0"></script>
+<script
+    src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0">
+</script>
 
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+
+<script
+    src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd">
+</script>
 
 
 <!-- =====================================================
-     SPIDER-AI FILES
-===================================================== -->
+     SPIDER-AI MODULES
+====================================================== -->
 
 <script src="settings.js"></script>
+
 <script src="hud.js"></script>
+
 <script src="voice.js"></script>
+
 <script src="distance.js"></script>
+
 <script src="vision.js"></script>
+
 <script src="ai.js"></script>
+
 <script src="app.js"></script>
 
 
 </body>
+
 </html>
