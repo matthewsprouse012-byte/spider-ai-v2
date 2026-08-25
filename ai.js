@@ -3,9 +3,8 @@ window.SpiderAI = {
     online: false,
 
     currentTarget: null,
-
+    
     detections: [],
-
 
     initialize() {
 
