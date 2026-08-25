@@ -1,31 +1,56 @@
 window.Vision = {
 
     video: null,
+
     model: null,
+
     running: false,
+
     loading: false,
 
-    lastScanTime: 0,
-    stableDetections: [],
     frameHistory: [],
+
+    lastScanTime: 0,
+
+    scanCount: 0,
+
+    fps: 0,
+
+    fpsTimer: 0,
+
 
     initialize(video) {
 
         this.video = video;
 
-        if (!this.video) {
-            console.error("VISION: camera missing");
+
+        if (!video) {
+
+            console.error(
+                "VISION: camera missing"
+            );
+
             return false;
+
         }
 
-        if (typeof cocoSsd === "undefined") {
-            console.error("VISION: COCO-SSD not loaded");
-            HUD.setAIStatus("ERROR");
-            HUD.setTarget("MODEL NOT LOADED");
+
+        if (
+            typeof cocoSsd ===
+            "undefined"
+        ) {
+
+            console.error(
+                "VISION: model library missing"
+            );
+
             return false;
+
         }
+
 
         return true;
+
     },
 
 
@@ -35,23 +60,40 @@ window.Vision = {
             return true;
         }
 
+
         try {
 
             this.loading = true;
 
-            HUD.setAIStatus("LOADING");
-            HUD.setTarget("LOADING VISION");
+            HUD.setAIStatus(
+                "LOADING"
+            );
 
-            console.log("VISION: loading model...");
+            HUD.setModelStatus(
+                "LOADING"
+            );
 
-            this.model = await cocoSsd.load();
+
+            this.model =
+                await cocoSsd.load();
+
 
             this.loading = false;
 
-            HUD.setAIStatus("READY");
-            HUD.setTarget("VISION READY");
 
-            console.log("VISION: model ready");
+            HUD.setAIStatus(
+                "READY"
+            );
+
+            HUD.setModelStatus(
+                "READY"
+            );
+
+
+            console.log(
+                "VISION: MODEL READY"
+            );
+
 
             return true;
 
@@ -60,33 +102,62 @@ window.Vision = {
             this.loading = false;
 
             console.error(
-                "VISION MODEL ERROR:",
+                "VISION:",
                 error
             );
 
-            HUD.setAIStatus("ERROR");
-            HUD.setTarget("MODEL ERROR");
+
+            HUD.setAIStatus(
+                "ERROR"
+            );
+
+            HUD.setModelStatus(
+                "ERROR"
+            );
+
 
             return false;
+
         }
+
     },
 
 
     start() {
 
         if (!this.model) {
-            console.error("VISION: model not loaded");
+
+            console.error(
+                "VISION: model unavailable"
+            );
+
             return;
+
         }
+
 
         this.running = true;
 
         this.frameHistory = [];
 
-        HUD.setAIStatus("ONLINE");
-        HUD.setTarget("SCANNING");
+        this.scanCount = 0;
+
+        this.fpsTimer =
+            performance.now();
+
+
+        HUD.setAIStatus(
+            "ONLINE"
+        );
+
+
+        HUD.setTrackStatus(
+            "SEARCHING"
+        );
+
 
         this.scan();
+
     },
 
 
@@ -95,12 +166,28 @@ window.Vision = {
         this.running = false;
 
         this.frameHistory = [];
-        this.stableDetections = [];
+
+        this.scanCount = 0;
+
+
+        HUD.setAIStatus(
+            "STANDBY"
+        );
+
+        HUD.setTrackStatus(
+            "OFF"
+        );
+
+        HUD.setObjectCount(
+            0
+        );
+
+        HUD.setScanRate(
+            0
+        );
 
         HUD.hideDetection();
-        HUD.setAIStatus("STANDBY");
-        HUD.setObject("STANDBY");
-        HUD.setTarget("VISION OFF");
+
     },
 
 
@@ -109,6 +196,7 @@ window.Vision = {
         if (!this.running) {
             return;
         }
+
 
         if (
             !this.video ||
@@ -121,7 +209,12 @@ window.Vision = {
             );
 
             return;
+
         }
+
+
+        const start =
+            performance.now();
 
 
         try {
@@ -130,7 +223,7 @@ window.Vision = {
                 await this.model.detect(
                     this.video,
                     20,
-                    0.45
+                    0.50
                 );
 
 
@@ -138,39 +231,40 @@ window.Vision = {
                 predictions
                     .filter(
                         item =>
-                            item.score >= 0.55
+                            item.score >=
+                            0.50
                     )
                     .map(
                         item => ({
 
-                            name: item.class,
+                            name:
+                                item.class,
 
-                            confidence: item.score,
+                            confidence:
+                                item.score,
 
-                            box: item.bbox
+                            box:
+                                item.bbox
 
                         })
                     );
 
 
-            this.frameHistory.push(
+            this.addFrame(
                 detections
             );
 
 
-            if (this.frameHistory.length > 3) {
-
-                this.frameHistory.shift();
-
-            }
-
-
             const stable =
-                this.getStableDetections();
+                this.getStableTargets();
 
 
-            this.stableDetections =
-                stable;
+            this.scanCount++;
+
+
+            this.updateFPS(
+                start
+            );
 
 
             SpiderAI.processDetections(
@@ -192,9 +286,7 @@ window.Vision = {
 
             setTimeout(
                 () => this.scan(),
-                SPIDER_CONFIG
-                    .vision
-                    .scanInterval
+                120
             );
 
         }
@@ -202,7 +294,36 @@ window.Vision = {
     },
 
 
-    getStableDetections() {
+    addFrame(detections) {
+
+        this.frameHistory.push({
+
+            time:
+                performance.now(),
+
+            detections:
+                detections
+
+        });
+
+
+        /*
+         * Keep only the most
+         * recent 5 scans.
+         */
+
+        if (
+            this.frameHistory.length > 5
+        ) {
+
+            this.frameHistory.shift();
+
+        }
+
+    },
+
+
+    getStableTargets() {
 
         if (
             this.frameHistory.length < 2
@@ -213,18 +334,26 @@ window.Vision = {
         }
 
 
-        const results = [];
-
-
         const latest =
             this.frameHistory[
                 this.frameHistory.length - 1
-            ];
+            ].detections;
 
 
-        for (const current of latest) {
+        const stable = [];
 
-            let matches = 0;
+
+        for (
+            const candidate
+            of latest
+        ) {
+
+
+            let appearances = 0;
+
+            let confidenceTotal = 0;
+
+            let matchingBox = null;
 
 
             for (
@@ -232,44 +361,74 @@ window.Vision = {
                 of this.frameHistory
             ) {
 
-                const found =
-                    frame.some(
+                const match =
+                    frame.detections.find(
                         item =>
+
                             item.name ===
-                            current.name &&
-                            this.boxesOverlap(
+                            candidate.name &&
+
+                            this.iou(
                                 item.box,
-                                current.box
-                            ) > 0.25
+                                candidate.box
+                            ) >= 0.25
                     );
 
 
-                if (found) {
-                    matches++;
+                if (match) {
+
+                    appearances++;
+
+                    confidenceTotal +=
+                        match.confidence;
+
+                    matchingBox =
+                        match.box;
+
                 }
 
             }
 
 
+            /*
+             * Require the object to
+             * survive multiple scans.
+             */
+
             if (
-                matches >= 2
+                appearances >= 2
             ) {
 
-                results.push(
-                    current
-                );
+                stable.push({
+
+                    name:
+                        candidate.name,
+
+                    confidence:
+                        confidenceTotal /
+                        appearances,
+
+                    box:
+                        matchingBox ||
+                        candidate.box,
+
+                    stability:
+                        appearances /
+                        this.frameHistory.length
+
+                });
 
             }
 
         }
 
 
-        return results;
+        return stable;
 
     },
 
 
-    boxesOverlap(a, b) {
+    iou(a, b) {
 
         const ax = a[0];
         const ay = a[1];
@@ -283,7 +442,18 @@ window.Vision = {
 
 
         const left =
-            Math.max(ax, bx);
+            Math.max(
+                ax,
+                bx
+            );
+
+
+        const top =
+            Math.max(
+                ay,
+                by
+            );
+
 
         const right =
             Math.min(
@@ -291,8 +461,6 @@ window.Vision = {
                 bx + bw
             );
 
-        const top =
-            Math.max(ay, by);
 
         const bottom =
             Math.min(
@@ -306,6 +474,7 @@ window.Vision = {
                 0,
                 right - left
             );
+
 
         const height =
             Math.max(
@@ -321,6 +490,7 @@ window.Vision = {
         const areaA =
             aw * ah;
 
+
         const areaB =
             bw * bh;
 
@@ -331,16 +501,59 @@ window.Vision = {
             intersection;
 
 
-        if (union <= 0) {
+        if (
+            union <= 0
+        ) {
+
             return 0;
+
         }
 
 
-        return intersection / union;
+        return (
+            intersection /
+            union
+        );
+
+    },
+
+
+    updateFPS(startTime) {
+
+        const now =
+            performance.now();
+
+
+        if (
+            now -
+            this.fpsTimer >=
+            1000
+        ) {
+
+            this.fps =
+                this.scanCount /
+                (
+                    (now -
+                    this.fpsTimer) /
+                    1000
+                );
+
+
+            this.scanCount = 0;
+
+            this.fpsTimer = now;
+
+
+            HUD.setScanRate(
+                this.fps
+            );
+
+        }
+
     }
 
 };
 
 console.log(
-    "VISION V2.1: loaded"
+    "VISION V2.2: loaded"
 );
