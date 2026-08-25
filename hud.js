@@ -3,9 +3,13 @@ window.HUD = {
     setSystemStatus(status) {
 
         const el =
-            document.getElementById("systemStatus");
+            document.getElementById(
+                "systemStatus"
+            );
 
-        if (el) el.textContent = status;
+        if (el) {
+            el.textContent = status;
+        }
 
     },
 
@@ -13,9 +17,13 @@ window.HUD = {
     setCameraStatus(status) {
 
         const el =
-            document.getElementById("cameraStatus");
+            document.getElementById(
+                "cameraStatus"
+            );
 
-        if (el) el.textContent = status;
+        if (el) {
+            el.textContent = status;
+        }
 
     },
 
@@ -23,9 +31,51 @@ window.HUD = {
     setAIStatus(status) {
 
         const el =
-            document.getElementById("aiStatus");
+            document.getElementById(
+                "aiStatus"
+            );
 
-        if (el) el.textContent = status;
+        if (el) {
+            el.textContent = status;
+        }
+
+    },
+
+
+    setModelStatus(status) {
+
+        const el =
+            document.getElementById(
+                "modelStatus"
+            );
+
+        if (el) {
+            el.textContent = status;
+        }
+
+    },
+
+
+    setTrackStatus(status) {
+
+        const el =
+            document.getElementById(
+                "trackStatus"
+            );
+
+        const main =
+            document.getElementById(
+                "trackingStatus"
+            );
+
+
+        if (el) {
+            el.textContent = status;
+        }
+
+        if (main) {
+            main.textContent = status;
+        }
 
     },
 
@@ -33,9 +83,13 @@ window.HUD = {
     setDepthStatus(status) {
 
         const el =
-            document.getElementById("depthStatus");
+            document.getElementById(
+                "depthStatus"
+            );
 
-        if (el) el.textContent = status;
+        if (el) {
+            el.textContent = status;
+        }
 
     },
 
@@ -43,18 +97,25 @@ window.HUD = {
     setBattery(value) {
 
         const el =
-            document.getElementById("battery");
+            document.getElementById(
+                "battery"
+            );
 
         if (!el) return;
 
-        if (value === null || value === undefined) {
 
-            el.textContent = "--%";
+        if (
+            value === null ||
+            value === undefined
+        ) {
+
+            el.textContent = "--";
 
         } else {
 
             el.textContent =
-                Math.round(value) + "%";
+                Math.round(value) +
+                "%";
 
         }
 
@@ -64,192 +125,252 @@ window.HUD = {
     setTarget(text) {
 
         const el =
-            document.getElementById("targetText");
+            document.getElementById(
+                "scanMessage"
+            );
 
-        if (el) el.textContent = text;
+        if (el) {
+            el.textContent = text;
+        }
 
     },
 
 
-    setObject(name, confidence = null) {
+    setObject(
+        name,
+        confidence
+    ) {
 
-        const nameEl =
-            document.getElementById("objectName");
+        const el =
+            document.getElementById(
+                "objectName"
+            );
 
-        const confidenceEl =
-            document.getElementById("confidence");
-
-
-        if (nameEl) {
-
-            nameEl.textContent =
-                name || "UNKNOWN";
-
+        if (el) {
+            el.textContent =
+                name || "NONE";
         }
 
 
-        if (confidenceEl) {
+        if (
+            confidence !== undefined
+        ) {
 
-            if (
-                confidence === null ||
-                confidence === undefined
-            ) {
+            this.setConfidence(
+                confidence
+            );
 
-                confidenceEl.textContent =
-                    "CONFIDENCE: --";
+        }
 
-            } else {
+    },
 
-                confidenceEl.textContent =
-                    "CONFIDENCE: " +
-                    Math.round(
-                        confidence * 100
-                    ) +
-                    "%";
 
+    setConfidence(value) {
+
+        const text =
+            document.getElementById(
+                "confidence"
+            );
+
+        const fill =
+            document.getElementById(
+                "confidenceFill"
+            );
+
+
+        if (
+            value === null ||
+            value === undefined
+        ) {
+
+            if (text) {
+                text.textContent = "--";
             }
 
+            if (fill) {
+                fill.style.width = "0%";
+            }
+
+            return;
+
+        }
+
+
+        const percent =
+            Math.round(
+                value * 100
+            );
+
+
+        if (text) {
+
+            text.textContent =
+                percent + "%";
+
+        }
+
+
+        if (fill) {
+
+            fill.style.width =
+                percent + "%";
+
         }
 
     },
 
 
-    showDetection(name, box) {
+    setObjectCount(count) {
 
-        const detection =
+        const el =
+            document.getElementById(
+                "objectCount"
+            );
+
+        if (el) {
+
+            el.textContent =
+                count;
+
+        }
+
+    },
+
+
+    setScanRate(fps) {
+
+        const el =
+            document.getElementById(
+                "scanRate"
+            );
+
+        if (el) {
+
+            el.textContent =
+                Math.round(fps) +
+                " FPS";
+
+        }
+
+    },
+
+
+    showDetection(
+        name,
+        box
+    ) {
+
+        const boxElement =
             document.getElementById(
                 "detectionBox"
             );
 
-        const label =
-            document.getElementById(
-                "detectionLabel"
-            );
+
+        if (!boxElement) {
+            return;
+        }
 
 
-        if (!detection) return;
-
-
-        detection.classList.remove(
+        boxElement.classList.remove(
             "hidden"
         );
 
 
-        if (label) {
+        if (!box) {
+            return;
+        }
 
-            label.textContent =
-                name || "OBJECT";
+
+        const x = box[0];
+        const y = box[1];
+        const width = box[2];
+        const height = box[3];
+
+
+        /*
+         * COCO-SSD coordinates are
+         * based on the video frame.
+         *
+         * Convert them to the
+         * displayed camera area.
+         */
+
+        const video =
+            document.getElementById(
+                "camera"
+            );
+
+
+        if (!video) {
+            return;
+        }
+
+
+        const scaleX =
+            window.innerWidth /
+            video.videoWidth;
+
+
+        const scaleY =
+            window.innerHeight /
+            video.videoHeight;
+
+
+        if (
+            !Number.isFinite(scaleX) ||
+            !Number.isFinite(scaleY)
+        ) {
+
+            return;
 
         }
 
 
-        if (!box) return;
+        boxElement.style.left =
+            (
+                x * scaleX
+            ) + "px";
 
 
-        const [x, y, width, height] =
-            box;
+        boxElement.style.top =
+            (
+                y * scaleY
+            ) + "px";
 
 
-        detection.style.left =
-            x + "px";
+        boxElement.style.width =
+            (
+                width * scaleX
+            ) + "px";
 
-        detection.style.top =
-            y + "px";
 
-        detection.style.width =
-            width + "px";
-
-        detection.style.height =
-            height + "px";
+        boxElement.style.height =
+            (
+                height * scaleY
+            ) + "px";
 
     },
 
 
     hideDetection() {
 
-        const detection =
+        const el =
             document.getElementById(
                 "detectionBox"
             );
 
-        if (detection) {
+        if (el) {
 
-            detection.classList.add(
+            el.classList.add(
                 "hidden"
             );
 
         }
 
-    },
-
-
-    setDistance(value, mode) {
-
-        const distance =
-            document.getElementById(
-                "distance"
-            );
-
-        const modeEl =
-            document.getElementById(
-                "distanceMode"
-            );
-
-
-        if (distance) {
-
-            if (
-                value === null ||
-                value === undefined
-            ) {
-
-                distance.textContent = "--";
-
-            } else {
-
-                distance.textContent =
-                    Number(value).toFixed(1);
-
-            }
-
-        }
-
-
-        if (modeEl) {
-
-            if (mode === "sensor") {
-
-                modeEl.textContent =
-                    "MEASUREMENT: SENSOR";
-
-            } else if (mode === "estimate") {
-
-                modeEl.textContent =
-                    "MEASUREMENT: ESTIMATE";
-
-            } else {
-
-                modeEl.textContent =
-                    "SENSOR: NOT CONNECTED";
-
-            }
-
-        }
-
-    },
-
-
-    setVoiceStatus(status) {
-
-        const el =
-            document.getElementById(
-                "voiceStatus"
-            );
-
-        if (el) el.textContent = status;
-
     }
 
 };
 
-console.log("HUD: loaded");
+console.log(
+    "HUD V2.2: loaded"
+);
