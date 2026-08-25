@@ -1,69 +1,46 @@
 window.App = {
 
     started: false,
-
+    cameraStream: null,
 
     async initialize() {
 
-        console.log(
-            "======================"
-        );
-
-        console.log(
-            "SPIDER-AI V2.2"
-        );
-
-        console.log(
-            "VISION SYSTEM"
-        );
-
-        console.log(
-            "======================"
-        );
-
+        console.log("================================");
+        console.log("SPIDER-AI V2.2");
+        console.log("INITIALIZING VISION SYSTEM");
+        console.log("================================");
 
         const camera =
-            document.getElementById(
-                "camera"
-            );
+            document.getElementById("camera");
 
+        if (!camera) {
+            console.error("APP: camera element missing");
+            return;
+        }
 
-        Distance.initialize();
+        // Initialize supporting systems
+        if (window.Distance) {
+            Distance.initialize();
+        }
 
-        SpiderAI.initialize();
+        if (window.SpiderAI) {
+            SpiderAI.initialize();
+        }
 
-        Vision.initialize(
-            camera
-        );
+        if (window.Vision) {
+            Vision.initialize(camera);
+        }
 
-
-        HUD.setSystemStatus(
-            "READY"
-        );
-
-        HUD.setCameraStatus(
-            "OFF"
-        );
-
-        HUD.setAIStatus(
-            "STANDBY"
-        );
-
-        HUD.setModelStatus(
-            "OFF"
-        );
-
-        HUD.setTrackStatus(
-            "OFF"
-        );
-
-        HUD.setTarget(
-            "SYSTEM READY"
-        );
-
+        HUD.setSystemStatus("READY");
+        HUD.setCameraStatus("OFF");
+        HUD.setAIStatus("STANDBY");
+        HUD.setModelStatus("OFF");
+        HUD.setTrackStatus("OFF");
+        HUD.setTarget("SYSTEM READY");
 
         this.updateBattery();
 
+        console.log("APP: initialization complete");
     },
 
 
@@ -73,91 +50,139 @@ window.App = {
             return;
         }
 
-
         const button =
-            document.getElementById(
-                "startButton"
-            );
+            document.getElementById("startButton");
 
+        const camera =
+            document.getElementById("camera");
+
+        if (!camera) {
+            console.error("APP: camera missing");
+            return;
+        }
 
         try {
 
-            button.textContent =
-                "STARTING...";
+            if (button) {
+                button.disabled = true;
+                button.textContent = "STARTING...";
+            }
+
+            HUD.setSystemStatus("STARTING");
+            HUD.setTarget("STARTING CAMERA");
 
 
-            HUD.setSystemStatus(
-                "STARTING"
-            );
+            // ==========================================
+            // CAMERA
+            // ==========================================
+
+            if (
+                !navigator.mediaDevices ||
+                !navigator.mediaDevices.getUserMedia
+            ) {
+                throw new Error(
+                    "Camera access is not supported by this browser."
+                );
+            }
 
 
-            const stream =
-                await navigator
-                    .mediaDevices
-                    .getUserMedia({
+            this.cameraStream =
+                await navigator.mediaDevices.getUserMedia({
 
-                        video: {
-
-                            facingMode:
-                                {
-                                    ideal:
-                                        "environment"
-                                },
-
-                            width: {
-                                ideal: 1280
-                            },
-
-                            height: {
-                                ideal: 720
-                            }
-
+                    video: {
+                        facingMode: {
+                            ideal: "environment"
                         },
 
-                        audio: false
+                        width: {
+                            ideal: 1280
+                        },
 
-                    });
+                        height: {
+                            ideal: 720
+                        }
+                    },
 
-
-            const camera =
-                document.getElementById(
-                    "camera"
-                );
+                    audio: false
+                });
 
 
             camera.srcObject =
-                stream;
+                this.cameraStream;
+
+
+            await new Promise(
+                resolve => {
+
+                    if (
+                        camera.readyState >= 2
+                    ) {
+                        resolve();
+                        return;
+                    }
+
+                    camera.onloadedmetadata =
+                        () => resolve();
+
+                }
+            );
 
 
             await camera.play();
 
 
-            HUD.setCameraStatus(
-                "ON"
+            HUD.setCameraStatus("ON");
+            HUD.setTarget("CAMERA ONLINE");
+
+
+            console.log(
+                "APP: camera online"
             );
 
 
-            HUD.setSystemStatus(
-                "ONLINE"
-            );
+            // ==========================================
+            // VISION MODEL
+            // ==========================================
+
+            HUD.setAIStatus("LOADING");
+            HUD.setModelStatus("LOADING");
+            HUD.setTarget("LOADING AI MODEL");
 
 
-            /*
-             * Load AI model.
-             */
+            if (
+                !window.Vision
+            ) {
+                throw new Error(
+                    "Vision system is missing."
+                );
+            }
 
-            const ready =
+
+            const modelReady =
                 await Vision.loadModel();
 
 
-            if (!ready) {
+            if (!modelReady) {
 
                 throw new Error(
-                    "AI MODEL FAILED"
+                    "COCO-SSD failed to load."
                 );
 
             }
 
+
+            HUD.setModelStatus("READY");
+            HUD.setAIStatus("ONLINE");
+
+
+            console.log(
+                "APP: AI model ready"
+            );
+
+
+            // ==========================================
+            // START SCANNING
+            // ==========================================
 
             Vision.start();
 
@@ -165,40 +190,66 @@ window.App = {
             this.started = true;
 
 
-            button.textContent =
-                "STOP SPIDER-AI";
+            HUD.setSystemStatus("ONLINE");
+            HUD.setTarget("SCANNING");
+            HUD.setTrackStatus("SEARCHING");
 
 
-            HUD.setTarget(
-                "SCANNING"
-            );
+            if (button) {
+
+                button.disabled = false;
+
+                button.textContent =
+                    "STOP SPIDER-AI";
+
+            }
 
 
             console.log(
-                "SPIDER-AI ONLINE"
+                "SPIDER-AI ACTIVE"
             );
 
 
         } catch (error) {
 
             console.error(
-                "START ERROR:",
+                "SPIDER-AI START ERROR:",
                 error
             );
 
 
-            HUD.setSystemStatus(
-                "ERROR"
-            );
+            this.started = false;
 
 
-            HUD.setTarget(
-                "START FAILED"
-            );
+            if (this.cameraStream) {
+
+                this.cameraStream
+                    .getTracks()
+                    .forEach(
+                        track => track.stop()
+                    );
+
+                this.cameraStream = null;
+
+            }
 
 
-            button.textContent =
-                "TRY AGAIN";
+            camera.srcObject = null;
+
+
+            HUD.setSystemStatus("ERROR");
+            HUD.setAIStatus("ERROR");
+            HUD.setTarget("START FAILED");
+
+
+            if (button) {
+
+                button.disabled = false;
+
+                button.textContent =
+                    "TRY AGAIN";
+
+            }
 
         }
 
@@ -207,83 +258,90 @@ window.App = {
 
     stop() {
 
-        const camera =
-            document.getElementById(
-                "camera"
-            );
+        console.log(
+            "SPIDER-AI: stopping"
+        );
 
 
-        if (
-            camera &&
-            camera.srcObject
-        ) {
+        if (window.Vision) {
+            Vision.stop();
+        }
 
-            camera.srcObject
+
+        if (this.cameraStream) {
+
+            this.cameraStream
                 .getTracks()
                 .forEach(
-                    track =>
-                        track.stop()
+                    track => track.stop()
                 );
 
+            this.cameraStream = null;
+
         }
+
+
+        const camera =
+            document.getElementById("camera");
 
 
         if (camera) {
-
-            camera.srcObject =
-                null;
-
+            camera.srcObject = null;
         }
-
-
-        Vision.stop();
 
 
         this.started = false;
 
 
-        HUD.setSystemStatus(
-            "READY"
-        );
-
-        HUD.setCameraStatus(
-            "OFF"
-        );
-
-        HUD.setAIStatus(
-            "STANDBY"
-        );
-
-        HUD.setModelStatus(
-            "OFF"
-        );
-
-        HUD.setTrackStatus(
-            "OFF"
-        );
-
-        HUD.setTarget(
-            "SYSTEM READY"
-        );
+        HUD.setSystemStatus("READY");
+        HUD.setCameraStatus("OFF");
+        HUD.setAIStatus("STANDBY");
+        HUD.setModelStatus("OFF");
+        HUD.setTrackStatus("OFF");
+        HUD.setObjectCount(0);
+        HUD.setScanRate(0);
+        HUD.setObject("NONE", 0);
+        HUD.setTarget("SYSTEM READY");
+        HUD.hideDetection();
 
 
-        document.getElementById(
-            "startButton"
-        ).textContent =
-            "START SPIDER-AI";
+        const button =
+            document.getElementById(
+                "startButton"
+            );
+
+
+        if (button) {
+
+            button.disabled = false;
+
+            button.textContent =
+                "START SPIDER-AI";
+
+        }
 
     },
 
 
     async updateBattery() {
 
+        const batteryElement =
+            document.getElementById(
+                "battery"
+            );
+
+
+        if (!batteryElement) {
+            return;
+        }
+
+
         if (
             !navigator.getBattery
         ) {
 
-            HUD.setBattery(
-                null
-            );
+            batteryElement.textContent =
+                "--";
 
             return;
 
@@ -293,17 +351,18 @@ window.App = {
         try {
 
             const battery =
-                await navigator
-                    .getBattery();
+                await navigator.getBattery();
 
 
             const update =
                 () => {
 
-                    HUD.setBattery(
-                        battery.level *
-                        100
-                    );
+                    const level =
+                        Math.round(
+                            battery.level * 100
+                        );
+
+                    HUD.setBattery(level);
 
                 };
 
@@ -316,11 +375,14 @@ window.App = {
                 update
             );
 
+
         } catch (error) {
 
-            console.log(
-                "Battery unavailable"
+            console.warn(
+                "Battery information unavailable."
             );
+
+            HUD.setBattery(null);
 
         }
 
@@ -328,6 +390,10 @@ window.App = {
 
 };
 
+
+// ==============================================
+// PAGE START
+// ==============================================
 
 window.addEventListener(
     "DOMContentLoaded",
@@ -342,7 +408,7 @@ window.addEventListener(
         if (!button) {
 
             console.error(
-                "START BUTTON MISSING"
+                "APP: START BUTTON NOT FOUND"
             );
 
             return;
