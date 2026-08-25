@@ -1,39 +1,30 @@
 window.HUD = {
 
+    // ==========================================
+    // SYSTEM STATUS
+    // ==========================================
+
     setSystemStatus(status) {
 
         const element =
-            document.getElementById(
-                "systemStatus"
-            );
+            document.getElementById("systemStatus");
 
         const indicator =
-            document.getElementById(
-                "statusIndicator"
-            );
-
+            document.getElementById("statusIndicator");
 
         if (element) {
-            element.textContent =
-                status;
+            element.textContent = status;
         }
-
 
         if (indicator) {
 
-            indicator.className =
-                "status-dot";
-
+            indicator.className = "status-dot";
 
             if (
                 status === "ONLINE" ||
                 status === "READY"
             ) {
-
-                indicator.classList.add(
-                    "online"
-                );
-
+                indicator.classList.add("online");
             }
 
         }
@@ -41,152 +32,148 @@ window.HUD = {
     },
 
 
+    // ==========================================
+    // CAMERA
+    // ==========================================
+
     setCameraStatus(status) {
 
         const element =
-            document.getElementById(
-                "cameraStatus"
-            );
+            document.getElementById("cameraStatus");
 
         if (element) {
-            element.textContent =
-                status;
+            element.textContent = status;
         }
 
     },
 
+
+    // ==========================================
+    // AI
+    // ==========================================
 
     setAIStatus(status) {
 
         const element =
-            document.getElementById(
-                "aiStatus"
-            );
+            document.getElementById("aiStatus");
 
         if (element) {
-            element.textContent =
-                status;
+            element.textContent = status;
         }
 
     },
 
+
+    // ==========================================
+    // MODEL
+    // ==========================================
 
     setModelStatus(status) {
 
         const element =
-            document.getElementById(
-                "modelStatus"
-            );
+            document.getElementById("modelStatus");
 
         if (element) {
-            element.textContent =
-                status;
+            element.textContent = status;
         }
 
     },
 
+
+    // ==========================================
+    // TRACKING
+    // ==========================================
 
     setTrackStatus(status) {
 
-        const element =
-            document.getElementById(
-                "trackStatus"
-            );
+        const trackElement =
+            document.getElementById("trackStatus");
 
         const trackingElement =
-            document.getElementById(
-                "trackingStatus"
-            );
+            document.getElementById("trackingStatus");
 
-
-        if (element) {
-            element.textContent =
-                status;
+        if (trackElement) {
+            trackElement.textContent = status;
         }
 
-
         if (trackingElement) {
-            trackingElement.textContent =
-                status;
+            trackingElement.textContent = status;
         }
 
     },
 
+
+    // ==========================================
+    // DEPTH
+    // ==========================================
 
     setDepthStatus(status) {
 
         const element =
-            document.getElementById(
-                "depthStatus"
-            );
+            document.getElementById("depthStatus");
 
         if (element) {
-            element.textContent =
-                status;
+            element.textContent = status;
         }
 
     },
 
 
+    // ==========================================
+    // BATTERY
+    // ==========================================
+
     setBattery(value) {
 
         const element =
-            document.getElementById(
-                "battery"
-            );
-
+            document.getElementById("battery");
 
         if (!element) {
             return;
         }
 
-
         if (
             value === null ||
-            value === undefined
+            value === undefined ||
+            Number.isNaN(value)
         ) {
 
-            element.textContent =
-                "--";
+            element.textContent = "--";
 
             return;
-
         }
 
-
         element.textContent =
-            Math.round(value) +
-            "%";
+            Math.round(value) + "%";
 
     },
 
+
+    // ==========================================
+    // SCAN MESSAGE
+    // ==========================================
 
     setTarget(text) {
 
         const element =
-            document.getElementById(
-                "scanMessage"
-            );
-
+            document.getElementById("scanMessage");
 
         if (element) {
             element.textContent =
-                text;
+                text || "";
         }
 
     },
 
 
-    setObject(
-        name,
-        confidence
-    ) {
+    // ==========================================
+    // OBJECT NAME
+    // ==========================================
+
+    setObject(name, confidence) {
 
         const element =
-            document.getElementById(
-                "objectName"
-            );
-
+            document.getElementById("objectName");
 
         if (element) {
 
@@ -194,7 +181,6 @@ window.HUD = {
                 name || "NONE";
 
         }
-
 
         if (
             confidence !== undefined
@@ -209,17 +195,17 @@ window.HUD = {
     },
 
 
+    // ==========================================
+    // CONFIDENCE
+    // ==========================================
+
     setConfidence(value) {
 
         const text =
-            document.getElementById(
-                "confidence"
-            );
+            document.getElementById("confidence");
 
         const fill =
-            document.getElementById(
-                "confidenceFill"
-            );
+            document.getElementById("confidenceFill");
 
 
         if (
@@ -229,17 +215,14 @@ window.HUD = {
         ) {
 
             if (text) {
-                text.textContent =
-                    "--";
+                text.textContent = "--";
             }
 
             if (fill) {
-                fill.style.width =
-                    "0%";
+                fill.style.width = "0%";
             }
 
             return;
-
         }
 
 
@@ -248,30 +231,28 @@ window.HUD = {
                 0,
                 Math.min(
                     100,
-                    Math.round(
-                        value * 100
-                    )
+                    Math.round(value * 100)
                 )
             );
 
 
         if (text) {
-
             text.textContent =
                 percent + "%";
-
         }
 
 
         if (fill) {
-
             fill.style.width =
                 percent + "%";
-
         }
 
     },
 
+
+    // ==========================================
+    // OBJECT COUNT
+    // ==========================================
 
     setObjectCount(count) {
 
@@ -280,16 +261,19 @@ window.HUD = {
                 "objectCount"
             );
 
-
         if (element) {
 
             element.textContent =
-                count || 0;
+                Number(count) || 0;
 
         }
 
     },
 
+
+    // ==========================================
+    // SCAN RATE
+    // ==========================================
 
     setScanRate(fps) {
 
@@ -298,30 +282,28 @@ window.HUD = {
                 "scanRate"
             );
 
-
         if (element) {
 
             element.textContent =
                 Math.round(
-                    fps || 0
-                ) +
-                " FPS";
+                    Number(fps) || 0
+                ) + " FPS";
 
         }
 
     },
 
 
-    showDetection(
-        name,
-        box
-    ) {
+    // ==========================================
+    // DETECTION BOX
+    // ==========================================
+
+    showDetection(name, box) {
 
         const detection =
             document.getElementById(
                 "detectionBox"
             );
-
 
         const label =
             document.getElementById(
@@ -378,40 +360,28 @@ window.HUD = {
         }
 
 
+        const screenWidth =
+            window.innerWidth;
+
+        const screenHeight =
+            window.innerHeight;
+
+
         const videoWidth =
             video.videoWidth;
-
 
         const videoHeight =
             video.videoHeight;
 
 
         /*
-         * COCO-SSD gives coordinates
-         * relative to the actual video.
-         */
-
-        const x = box[0];
-        const y = box[1];
-        const width = box[2];
-        const height = box[3];
-
-
-        /*
-         * object-fit: cover means
-         * the video may be cropped.
+         * The camera uses:
          *
-         * Calculate the actual
-         * displayed camera rectangle.
+         * object-fit: cover
+         *
+         * so calculate the displayed
+         * video scale and crop.
          */
-
-        const screenWidth =
-            window.innerWidth;
-
-
-        const screenHeight =
-            window.innerHeight;
-
 
         const scale =
             Math.max(
@@ -422,7 +392,6 @@ window.HUD = {
 
         const displayedWidth =
             videoWidth * scale;
-
 
         const displayedHeight =
             videoHeight * scale;
@@ -440,6 +409,12 @@ window.HUD = {
                 screenHeight -
                 displayedHeight
             ) / 2;
+
+
+        const x = box[0];
+        const y = box[1];
+        const width = box[2];
+        const height = box[3];
 
 
         detection.style.left =
@@ -470,13 +445,16 @@ window.HUD = {
     },
 
 
+    // ==========================================
+    // HIDE DETECTION
+    // ==========================================
+
     hideDetection() {
 
         const element =
             document.getElementById(
                 "detectionBox"
             );
-
 
         if (element) {
 
@@ -491,6 +469,10 @@ window.HUD = {
 };
 
 
+// ==========================================
+// HUD LOADED
+// ==========================================
+
 console.log(
-    "HUD V2.2: loaded"
+    "SPIDER-AI HUD V2.2: READY"
 );
