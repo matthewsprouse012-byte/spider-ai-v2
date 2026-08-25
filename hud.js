@@ -2,13 +2,40 @@ window.HUD = {
 
     setSystemStatus(status) {
 
-        const el =
+        const element =
             document.getElementById(
                 "systemStatus"
             );
 
-        if (el) {
-            el.textContent = status;
+        const indicator =
+            document.getElementById(
+                "statusIndicator"
+            );
+
+
+        if (element) {
+            element.textContent =
+                status;
+        }
+
+
+        if (indicator) {
+
+            indicator.className =
+                "status-dot";
+
+
+            if (
+                status === "ONLINE" ||
+                status === "READY"
+            ) {
+
+                indicator.classList.add(
+                    "online"
+                );
+
+            }
+
         }
 
     },
@@ -16,13 +43,14 @@ window.HUD = {
 
     setCameraStatus(status) {
 
-        const el =
+        const element =
             document.getElementById(
                 "cameraStatus"
             );
 
-        if (el) {
-            el.textContent = status;
+        if (element) {
+            element.textContent =
+                status;
         }
 
     },
@@ -30,13 +58,14 @@ window.HUD = {
 
     setAIStatus(status) {
 
-        const el =
+        const element =
             document.getElementById(
                 "aiStatus"
             );
 
-        if (el) {
-            el.textContent = status;
+        if (element) {
+            element.textContent =
+                status;
         }
 
     },
@@ -44,13 +73,14 @@ window.HUD = {
 
     setModelStatus(status) {
 
-        const el =
+        const element =
             document.getElementById(
                 "modelStatus"
             );
 
-        if (el) {
-            el.textContent = status;
+        if (element) {
+            element.textContent =
+                status;
         }
 
     },
@@ -58,23 +88,26 @@ window.HUD = {
 
     setTrackStatus(status) {
 
-        const el =
+        const element =
             document.getElementById(
                 "trackStatus"
             );
 
-        const main =
+        const trackingElement =
             document.getElementById(
                 "trackingStatus"
             );
 
 
-        if (el) {
-            el.textContent = status;
+        if (element) {
+            element.textContent =
+                status;
         }
 
-        if (main) {
-            main.textContent = status;
+
+        if (trackingElement) {
+            trackingElement.textContent =
+                status;
         }
 
     },
@@ -82,13 +115,14 @@ window.HUD = {
 
     setDepthStatus(status) {
 
-        const el =
+        const element =
             document.getElementById(
                 "depthStatus"
             );
 
-        if (el) {
-            el.textContent = status;
+        if (element) {
+            element.textContent =
+                status;
         }
 
     },
@@ -96,12 +130,15 @@ window.HUD = {
 
     setBattery(value) {
 
-        const el =
+        const element =
             document.getElementById(
                 "battery"
             );
 
-        if (!el) return;
+
+        if (!element) {
+            return;
+        }
 
 
         if (
@@ -109,28 +146,32 @@ window.HUD = {
             value === undefined
         ) {
 
-            el.textContent = "--";
+            element.textContent =
+                "--";
 
-        } else {
-
-            el.textContent =
-                Math.round(value) +
-                "%";
+            return;
 
         }
+
+
+        element.textContent =
+            Math.round(value) +
+            "%";
 
     },
 
 
     setTarget(text) {
 
-        const el =
+        const element =
             document.getElementById(
                 "scanMessage"
             );
 
-        if (el) {
-            el.textContent = text;
+
+        if (element) {
+            element.textContent =
+                text;
         }
 
     },
@@ -141,14 +182,17 @@ window.HUD = {
         confidence
     ) {
 
-        const el =
+        const element =
             document.getElementById(
                 "objectName"
             );
 
-        if (el) {
-            el.textContent =
+
+        if (element) {
+
+            element.textContent =
                 name || "NONE";
+
         }
 
 
@@ -180,15 +224,18 @@ window.HUD = {
 
         if (
             value === null ||
-            value === undefined
+            value === undefined ||
+            Number.isNaN(value)
         ) {
 
             if (text) {
-                text.textContent = "--";
+                text.textContent =
+                    "--";
             }
 
             if (fill) {
-                fill.style.width = "0%";
+                fill.style.width =
+                    "0%";
             }
 
             return;
@@ -197,8 +244,14 @@ window.HUD = {
 
 
         const percent =
-            Math.round(
-                value * 100
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    Math.round(
+                        value * 100
+                    )
+                )
             );
 
 
@@ -222,15 +275,16 @@ window.HUD = {
 
     setObjectCount(count) {
 
-        const el =
+        const element =
             document.getElementById(
                 "objectCount"
             );
 
-        if (el) {
 
-            el.textContent =
-                count;
+        if (element) {
+
+            element.textContent =
+                count || 0;
 
         }
 
@@ -239,15 +293,18 @@ window.HUD = {
 
     setScanRate(fps) {
 
-        const el =
+        const element =
             document.getElementById(
                 "scanRate"
             );
 
-        if (el) {
 
-            el.textContent =
-                Math.round(fps) +
+        if (element) {
+
+            element.textContent =
+                Math.round(
+                    fps || 0
+                ) +
                 " FPS";
 
         }
@@ -260,40 +317,45 @@ window.HUD = {
         box
     ) {
 
-        const boxElement =
+        const detection =
             document.getElementById(
                 "detectionBox"
             );
 
 
-        if (!boxElement) {
+        const label =
+            document.getElementById(
+                "detectionLabel"
+            );
+
+
+        if (!detection) {
             return;
         }
 
 
-        boxElement.classList.remove(
+        if (label) {
+
+            label.textContent =
+                name || "OBJECT";
+
+        }
+
+
+        detection.classList.remove(
             "hidden"
         );
 
 
-        if (!box) {
+        if (
+            !box ||
+            box.length < 4
+        ) {
+
             return;
+
         }
 
-
-        const x = box[0];
-        const y = box[1];
-        const width = box[2];
-        const height = box[3];
-
-
-        /*
-         * COCO-SSD coordinates are
-         * based on the video frame.
-         *
-         * Convert them to the
-         * displayed camera area.
-         */
 
         const video =
             document.getElementById(
@@ -306,19 +368,9 @@ window.HUD = {
         }
 
 
-        const scaleX =
-            window.innerWidth /
-            video.videoWidth;
-
-
-        const scaleY =
-            window.innerHeight /
-            video.videoHeight;
-
-
         if (
-            !Number.isFinite(scaleX) ||
-            !Number.isFinite(scaleY)
+            !video.videoWidth ||
+            !video.videoHeight
         ) {
 
             return;
@@ -326,27 +378,93 @@ window.HUD = {
         }
 
 
-        boxElement.style.left =
+        const videoWidth =
+            video.videoWidth;
+
+
+        const videoHeight =
+            video.videoHeight;
+
+
+        /*
+         * COCO-SSD gives coordinates
+         * relative to the actual video.
+         */
+
+        const x = box[0];
+        const y = box[1];
+        const width = box[2];
+        const height = box[3];
+
+
+        /*
+         * object-fit: cover means
+         * the video may be cropped.
+         *
+         * Calculate the actual
+         * displayed camera rectangle.
+         */
+
+        const screenWidth =
+            window.innerWidth;
+
+
+        const screenHeight =
+            window.innerHeight;
+
+
+        const scale =
+            Math.max(
+                screenWidth / videoWidth,
+                screenHeight / videoHeight
+            );
+
+
+        const displayedWidth =
+            videoWidth * scale;
+
+
+        const displayedHeight =
+            videoHeight * scale;
+
+
+        const offsetX =
             (
-                x * scaleX
+                screenWidth -
+                displayedWidth
+            ) / 2;
+
+
+        const offsetY =
+            (
+                screenHeight -
+                displayedHeight
+            ) / 2;
+
+
+        detection.style.left =
+            (
+                x * scale +
+                offsetX
             ) + "px";
 
 
-        boxElement.style.top =
+        detection.style.top =
             (
-                y * scaleY
+                y * scale +
+                offsetY
             ) + "px";
 
 
-        boxElement.style.width =
+        detection.style.width =
             (
-                width * scaleX
+                width * scale
             ) + "px";
 
 
-        boxElement.style.height =
+        detection.style.height =
             (
-                height * scaleY
+                height * scale
             ) + "px";
 
     },
@@ -354,14 +472,15 @@ window.HUD = {
 
     hideDetection() {
 
-        const el =
+        const element =
             document.getElementById(
                 "detectionBox"
             );
 
-        if (el) {
 
-            el.classList.add(
+        if (element) {
+
+            element.classList.add(
                 "hidden"
             );
 
@@ -370,6 +489,7 @@ window.HUD = {
     }
 
 };
+
 
 console.log(
     "HUD V2.2: loaded"
