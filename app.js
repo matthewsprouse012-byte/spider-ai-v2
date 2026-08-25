@@ -6,19 +6,19 @@ window.App = {
     async initialize() {
 
         console.log(
-            "========================"
+            "======================"
         );
 
         console.log(
-            "SPIDER-AI V2"
+            "SPIDER-AI V2.2"
         );
 
         console.log(
-            "INITIALIZING"
+            "VISION SYSTEM"
         );
 
         console.log(
-            "========================"
+            "======================"
         );
 
 
@@ -30,9 +30,11 @@ window.App = {
 
         Distance.initialize();
 
-        Voice.initialize();
-
         SpiderAI.initialize();
+
+        Vision.initialize(
+            camera
+        );
 
 
         HUD.setSystemStatus(
@@ -44,7 +46,15 @@ window.App = {
         );
 
         HUD.setAIStatus(
-            "READY"
+            "STANDBY"
+        );
+
+        HUD.setModelStatus(
+            "OFF"
+        );
+
+        HUD.setTrackStatus(
+            "OFF"
         );
 
         HUD.setTarget(
@@ -52,9 +62,7 @@ window.App = {
         );
 
 
-        console.log(
-            "APP: ready"
-        );
+        this.updateBattery();
 
     },
 
@@ -72,28 +80,15 @@ window.App = {
             );
 
 
-        button.textContent =
-            "STARTING...";
-
-
-        HUD.setSystemStatus(
-            "STARTING"
-        );
-
-
         try {
 
-            if (
-                !navigator.mediaDevices ||
-                !navigator.mediaDevices
-                    .getUserMedia
-            ) {
+            button.textContent =
+                "STARTING...";
 
-                throw new Error(
-                    "Camera API unavailable"
-                );
 
-            }
+            HUD.setSystemStatus(
+                "STARTING"
+            );
 
 
             const stream =
@@ -107,7 +102,15 @@ window.App = {
                                 {
                                     ideal:
                                         "environment"
-                                }
+                                },
+
+                            width: {
+                                ideal: 1280
+                            },
+
+                            height: {
+                                ideal: 720
+                            }
 
                         },
 
@@ -140,28 +143,21 @@ window.App = {
 
 
             /*
-             * Load the actual AI.
+             * Load AI model.
              */
 
-            const modelReady =
-                await Vision.initialize(
-                    camera
+            const ready =
+                await Vision.loadModel();
+
+
+            if (!ready) {
+
+                throw new Error(
+                    "AI MODEL FAILED"
                 );
-
-
-            if (!modelReady) {
-
-                button.textContent =
-                    "AI MODEL ERROR";
-
-                return;
 
             }
 
-
-            /*
-             * Start AI vision.
-             */
 
             Vision.start();
 
@@ -170,7 +166,7 @@ window.App = {
 
 
             button.textContent =
-                "SPIDER-AI ACTIVE";
+                "STOP SPIDER-AI";
 
 
             HUD.setTarget(
@@ -179,14 +175,14 @@ window.App = {
 
 
             console.log(
-                "SPIDER-AI ACTIVE"
+                "SPIDER-AI ONLINE"
             );
 
 
         } catch (error) {
 
             console.error(
-                "SPIDER-AI START ERROR:",
+                "START ERROR:",
                 error
             );
 
@@ -197,7 +193,7 @@ window.App = {
 
 
             HUD.setTarget(
-                "START ERROR"
+                "START FAILED"
             );
 
 
@@ -217,7 +213,10 @@ window.App = {
             );
 
 
-        if (camera.srcObject) {
+        if (
+            camera &&
+            camera.srcObject
+        ) {
 
             camera.srcObject
                 .getTracks()
@@ -229,15 +228,18 @@ window.App = {
         }
 
 
-        camera.srcObject =
-            null;
+        if (camera) {
+
+            camera.srcObject =
+                null;
+
+        }
 
 
         Vision.stop();
 
 
-        this.started =
-            false;
+        this.started = false;
 
 
         HUD.setSystemStatus(
@@ -252,6 +254,14 @@ window.App = {
             "STANDBY"
         );
 
+        HUD.setModelStatus(
+            "OFF"
+        );
+
+        HUD.setTrackStatus(
+            "OFF"
+        );
+
         HUD.setTarget(
             "SYSTEM READY"
         );
@@ -262,14 +272,62 @@ window.App = {
         ).textContent =
             "START SPIDER-AI";
 
+    },
+
+
+    async updateBattery() {
+
+        if (
+            !navigator.getBattery
+        ) {
+
+            HUD.setBattery(
+                null
+            );
+
+            return;
+
+        }
+
+
+        try {
+
+            const battery =
+                await navigator
+                    .getBattery();
+
+
+            const update =
+                () => {
+
+                    HUD.setBattery(
+                        battery.level *
+                        100
+                    );
+
+                };
+
+
+            update();
+
+
+            battery.addEventListener(
+                "levelchange",
+                update
+            );
+
+        } catch (error) {
+
+            console.log(
+                "Battery unavailable"
+            );
+
+        }
+
     }
 
 };
 
-
-/* =========================================================
-   BUTTON
-========================================================= */
 
 window.addEventListener(
     "DOMContentLoaded",
@@ -284,7 +342,7 @@ window.addEventListener(
         if (!button) {
 
             console.error(
-                "APP: start button missing"
+                "START BUTTON MISSING"
             );
 
             return;
@@ -296,7 +354,9 @@ window.addEventListener(
             "click",
             async () => {
 
-                if (!App.started) {
+                if (
+                    !App.started
+                ) {
 
                     await App.start();
 
