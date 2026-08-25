@@ -1,85 +1,57 @@
 window.Vision = {
 
     video: null,
-
     model: null,
-
     running: false,
-
     loading: false,
 
+    lastScanTime: 0,
+    stableDetections: [],
+    frameHistory: [],
 
-    async initialize(video) {
+    initialize(video) {
 
         this.video = video;
 
-
         if (!this.video) {
-
-            console.error(
-                "VISION: camera missing"
-            );
-
+            console.error("VISION: camera missing");
             return false;
-
         }
 
-
-        if (
-            typeof cocoSsd ===
-            "undefined"
-        ) {
-
-            console.error(
-                "VISION: COCO-SSD missing"
-            );
-
-            HUD.setAIStatus(
-                "ERROR"
-            );
-
-            HUD.setTarget(
-                "MODEL NOT LOADED"
-            );
-
+        if (typeof cocoSsd === "undefined") {
+            console.error("VISION: COCO-SSD not loaded");
+            HUD.setAIStatus("ERROR");
+            HUD.setTarget("MODEL NOT LOADED");
             return false;
-
         }
 
+        return true;
+    },
+
+
+    async loadModel() {
+
+        if (this.model) {
+            return true;
+        }
 
         try {
 
             this.loading = true;
 
-            HUD.setAIStatus(
-                "LOADING"
-            );
+            HUD.setAIStatus("LOADING");
+            HUD.setTarget("LOADING VISION");
 
-            HUD.setTarget(
-                "LOADING AI MODEL"
-            );
+            console.log("VISION: loading model...");
 
-
-            this.model =
-                await cocoSsd.load();
-
+            this.model = await cocoSsd.load();
 
             this.loading = false;
 
+            HUD.setAIStatus("READY");
+            HUD.setTarget("VISION READY");
 
-            HUD.setAIStatus(
-                "READY"
-            );
-
-            HUD.setTarget(
-                "VISION READY"
-            );
-
-
-            console.log(
-                "VISION: model ready"
-            );
-
+            console.log("VISION: model ready");
 
             return true;
 
@@ -92,51 +64,29 @@ window.Vision = {
                 error
             );
 
-
-            HUD.setAIStatus(
-                "ERROR"
-            );
-
-            HUD.setTarget(
-                "MODEL ERROR"
-            );
-
+            HUD.setAIStatus("ERROR");
+            HUD.setTarget("MODEL ERROR");
 
             return false;
-
         }
-
     },
 
 
     start() {
 
         if (!this.model) {
-
-            console.error(
-                "VISION: no model"
-            );
-
+            console.error("VISION: model not loaded");
             return;
-
         }
-
 
         this.running = true;
 
+        this.frameHistory = [];
 
-        HUD.setAIStatus(
-            "ONLINE"
-        );
-
-
-        HUD.setTarget(
-            "SCANNING"
-        );
-
+        HUD.setAIStatus("ONLINE");
+        HUD.setTarget("SCANNING");
 
         this.scan();
-
     },
 
 
@@ -144,24 +94,13 @@ window.Vision = {
 
         this.running = false;
 
+        this.frameHistory = [];
+        this.stableDetections = [];
 
         HUD.hideDetection();
-
-
-        HUD.setAIStatus(
-            "STANDBY"
-        );
-
-
-        HUD.setObject(
-            "STANDBY"
-        );
-
-
-        HUD.setTarget(
-            "VISION OFF"
-        );
-
+        HUD.setAIStatus("STANDBY");
+        HUD.setObject("STANDBY");
+        HUD.setTarget("VISION OFF");
     },
 
 
@@ -170,7 +109,6 @@ window.Vision = {
         if (!this.running) {
             return;
         }
-
 
         if (
             !this.video ||
@@ -183,7 +121,6 @@ window.Vision = {
             );
 
             return;
-
         }
 
 
@@ -191,29 +128,53 @@ window.Vision = {
 
             const predictions =
                 await this.model.detect(
-                    this.video
+                    this.video,
+                    20,
+                    0.45
                 );
 
 
             const detections =
-                predictions.map(
-                    prediction => ({
+                predictions
+                    .filter(
+                        item =>
+                            item.score >= 0.55
+                    )
+                    .map(
+                        item => ({
 
-                        name:
-                            prediction.class,
+                            name: item.class,
 
-                        confidence:
-                            prediction.score,
+                            confidence: item.score,
 
-                        box:
-                            prediction.bbox
+                            box: item.bbox
 
-                    })
-                );
+                        })
+                    );
+
+
+            this.frameHistory.push(
+                detections
+            );
+
+
+            if (this.frameHistory.length > 3) {
+
+                this.frameHistory.shift();
+
+            }
+
+
+            const stable =
+                this.getStableDetections();
+
+
+            this.stableDetections =
+                stable;
 
 
             SpiderAI.processDetections(
-                detections
+                stable
             );
 
 
@@ -238,8 +199,148 @@ window.Vision = {
 
         }
 
+    },
+
+
+    getStableDetections() {
+
+        if (
+            this.frameHistory.length < 2
+        ) {
+
+            return [];
+
+        }
+
+
+        const results = [];
+
+
+        const latest =
+            this.frameHistory[
+                this.frameHistory.length - 1
+            ];
+
+
+        for (const current of latest) {
+
+            let matches = 0;
+
+
+            for (
+                const frame
+                of this.frameHistory
+            ) {
+
+                const found =
+                    frame.some(
+                        item =>
+                            item.name ===
+                            current.name &&
+                            this.boxesOverlap(
+                                item.box,
+                                current.box
+                            ) > 0.25
+                    );
+
+
+                if (found) {
+                    matches++;
+                }
+
+            }
+
+
+            if (
+                matches >= 2
+            ) {
+
+                results.push(
+                    current
+                );
+
+            }
+
+        }
+
+
+        return results;
+
+    },
+
+
+    boxesOverlap(a, b) {
+
+        const ax = a[0];
+        const ay = a[1];
+        const aw = a[2];
+        const ah = a[3];
+
+        const bx = b[0];
+        const by = b[1];
+        const bw = b[2];
+        const bh = b[3];
+
+
+        const left =
+            Math.max(ax, bx);
+
+        const right =
+            Math.min(
+                ax + aw,
+                bx + bw
+            );
+
+        const top =
+            Math.max(ay, by);
+
+        const bottom =
+            Math.min(
+                ay + ah,
+                by + bh
+            );
+
+
+        const width =
+            Math.max(
+                0,
+                right - left
+            );
+
+        const height =
+            Math.max(
+                0,
+                bottom - top
+            );
+
+
+        const intersection =
+            width * height;
+
+
+        const areaA =
+            aw * ah;
+
+        const areaB =
+            bw * bh;
+
+
+        const union =
+            areaA +
+            areaB -
+            intersection;
+
+
+        if (union <= 0) {
+            return 0;
+        }
+
+
+        return intersection / union;
     }
 
 };
 
-console.log("VISION: loaded");
+console.log(
+    "VISION V2.1: loaded"
+);
