@@ -4,6 +4,9 @@ window.Voice = {
 
     available: false,
 
+    listening: false,
+
+
     initialize() {
 
         const Recognition =
@@ -11,91 +14,126 @@ window.Voice = {
             window.webkitSpeechRecognition;
 
 
-        if (Recognition) {
+        if (!Recognition) {
 
-            this.recognition =
-                new Recognition();
+            console.warn(
+                "VOICE: speech recognition unavailable"
+            );
 
-            this.recognition.lang =
-                "en-US";
+            HUD.setVoiceStatus(
+                "UNAVAILABLE"
+            );
 
-            this.recognition.continuous =
-                false;
-
-            this.recognition.interimResults =
-                false;
-
-
-            this.recognition.onstart =
-                () => {
-
-                    HUD.setVoiceStatus(
-                        "LISTENING"
-                    );
-
-                };
-
-
-            this.recognition.onend =
-                () => {
-
-                    HUD.setVoiceStatus(
-                        "READY"
-                    );
-
-                };
-
-
-            this.recognition.onresult =
-                event => {
-
-                    const result =
-                        event.results[
-                            event.results.length - 1
-                        ];
-
-                    const command =
-                        result[0]
-                            .transcript
-                            .trim();
-
-
-                    SpiderAI.handleCommand(
-                        command
-                    );
-
-                };
-
-
-            this.recognition.onerror =
-                error => {
-
-                    console.log(
-                        "VOICE ERROR:",
-                        error.error
-                    );
-
-                    HUD.setVoiceStatus(
-                        "ERROR"
-                    );
-
-                };
-
-
-            this.available = true;
+            return;
 
         }
 
 
+        this.recognition =
+            new Recognition();
+
+
+        this.recognition.lang =
+            "en-US";
+
+
+        this.recognition.continuous =
+            false;
+
+
+        this.recognition.interimResults =
+            false;
+
+
+        this.recognition.maxAlternatives =
+            1;
+
+
+        this.recognition.onstart =
+            () => {
+
+                this.listening = true;
+
+                HUD.setVoiceStatus(
+                    "LISTENING"
+                );
+
+            };
+
+
+        this.recognition.onend =
+            () => {
+
+                this.listening = false;
+
+                HUD.setVoiceStatus(
+                    "READY"
+                );
+
+            };
+
+
+        this.recognition.onresult =
+            event => {
+
+                const result =
+                    event.results[
+                        event.results.length - 1
+                    ];
+
+
+                const transcript =
+                    result[0]
+                        .transcript
+                        .trim();
+
+
+                console.log(
+                    "YOU:",
+                    transcript
+                );
+
+
+                HUD.setVoiceStatus(
+                    "PROCESSING"
+                );
+
+
+                SpiderAI.handleCommand(
+                    transcript
+                );
+
+            };
+
+
+        this.recognition.onerror =
+            error => {
+
+                this.listening = false;
+
+                console.warn(
+                    "VOICE ERROR:",
+                    error.error
+                );
+
+
+                HUD.setVoiceStatus(
+                    "READY"
+                );
+
+            };
+
+
+        this.available = true;
+
+
         HUD.setVoiceStatus(
-            this.available
-                ? "READY"
-                : "UNAVAILABLE"
+            "READY"
         );
 
 
         console.log(
-            "VOICE: loaded"
+            "VOICE V2.1: ready"
         );
 
     },
@@ -103,7 +141,21 @@ window.Voice = {
 
     listen() {
 
-        if (!this.recognition) {
+        if (
+            !this.available ||
+            !this.recognition
+        ) {
+
+            Voice.speak(
+                "Voice control is not available in this browser."
+            );
+
+            return;
+
+        }
+
+
+        if (this.listening) {
             return;
         }
 
@@ -114,10 +166,24 @@ window.Voice = {
 
         } catch (error) {
 
-            console.log(
-                "VOICE START:",
+            console.warn(
+                "VOICE START ERROR:",
                 error
             );
+
+        }
+
+    },
+
+
+    stopListening() {
+
+        if (
+            this.recognition &&
+            this.listening
+        ) {
+
+            this.recognition.stop();
 
         }
 
@@ -127,10 +193,19 @@ window.Voice = {
     speak(text) {
 
         if (
+            !text ||
             !("speechSynthesis" in window)
         ) {
+
             return;
+
         }
+
+
+        console.log(
+            "SPIDER-AI:",
+            text
+        );
 
 
         window.speechSynthesis.cancel();
@@ -142,28 +217,60 @@ window.Voice = {
             );
 
 
+        message.lang =
+            "en-US";
+
+
         message.rate =
-            SPIDER_CONFIG.voice.rate;
+            1.0;
+
 
         message.pitch =
-            SPIDER_CONFIG.voice.pitch;
+            1.0;
+
+
+        message.volume =
+            1.0;
+
+
+        message.onstart =
+            () => {
+
+                HUD.setVoiceStatus(
+                    "SPEAKING"
+                );
+
+            };
+
+
+        message.onend =
+            () => {
+
+                HUD.setVoiceStatus(
+                    "READY"
+                );
+
+            };
+
+
+        message.onerror =
+            () => {
+
+                HUD.setVoiceStatus(
+                    "READY"
+                );
+
+            };
 
 
         window.speechSynthesis.speak(
             message
         );
 
-    },
-
-
-    handleCommand(command) {
-
-        SpiderAI.handleCommand(
-            command
-        );
-
     }
 
 };
 
-console.log("VOICE: loaded");
+console.log(
+    "VOICE V2.1: loaded"
+);
