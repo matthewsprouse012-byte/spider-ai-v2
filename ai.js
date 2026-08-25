@@ -4,17 +4,17 @@ window.SpiderAI = {
 
     currentTarget: null,
 
+    detections: [],
+
 
     initialize() {
 
         this.online = true;
 
-        HUD.setAIStatus(
-            "READY"
-        );
+        HUD.setAIStatus("READY");
 
         console.log(
-            "AI CORE: online"
+            "SPIDER-AI CORE: online"
         );
 
     },
@@ -29,9 +29,12 @@ window.SpiderAI = {
         }
 
 
+        this.detections =
+            detections || [];
+
+
         if (
-            !detections ||
-            detections.length === 0
+            this.detections.length === 0
         ) {
 
             this.currentTarget =
@@ -47,42 +50,16 @@ window.SpiderAI = {
                 "SCANNING"
             );
 
-            Distance.clear();
-
             return;
-
         }
 
 
-        const valid =
-            detections.filter(
-                detection =>
-                    detection.confidence >=
-                    SPIDER_CONFIG
-                        .vision
-                        .confidenceThreshold
-            );
+        /*
+         * Highest confidence target.
+         */
 
-
-        if (valid.length === 0) {
-
-            HUD.hideDetection();
-
-            HUD.setObject(
-                "UNCERTAIN"
-            );
-
-            HUD.setTarget(
-                "ANALYZING"
-            );
-
-            return;
-
-        }
-
-
-        const target =
-            valid.reduce(
+        this.currentTarget =
+            this.detections.reduce(
                 (best, item) => {
 
                     if (!best) {
@@ -99,8 +76,8 @@ window.SpiderAI = {
             );
 
 
-        this.currentTarget =
-            target;
+        const target =
+            this.currentTarget;
 
 
         HUD.setObject(
@@ -122,7 +99,7 @@ window.SpiderAI = {
 
 
         console.log(
-            "AI TARGET:",
+            "TARGET:",
             target.name,
             target.confidence
         );
@@ -130,60 +107,90 @@ window.SpiderAI = {
     },
 
 
-    handleCommand(command) {
+    getObjectSummary() {
 
-        if (!command) return;
+        if (
+            !this.detections ||
+            this.detections.length === 0
+        ) {
+
+            return "I don't currently see any clearly identified objects.";
+
+        }
 
 
-        const text =
-            command.toLowerCase();
+        const counts = {};
 
 
-        console.log(
-            "AI COMMAND:",
-            command
+        for (
+            const detection
+            of this.detections
+        ) {
+
+            const name =
+                detection.name;
+
+
+            if (!counts[name]) {
+                counts[name] = 0;
+            }
+
+
+            counts[name]++;
+
+        }
+
+
+        const parts =
+            Object.entries(counts)
+                .map(
+                    ([name, count]) => {
+
+                        if (count === 1) {
+                            return "one " + name;
+                        }
+
+                        return (
+                            count +
+                            " " +
+                            name +
+                            "s"
+                        );
+
+                    }
+                );
+
+
+        return (
+            "I see " +
+            this.joinList(parts) +
+            "."
         );
 
+    },
 
-        if (
-            text.includes("what do you see") ||
-            text.includes("what am i looking at")
-        ) {
 
-            this.describeTarget();
+    joinList(items) {
 
-            return;
-
+        if (items.length === 1) {
+            return items[0];
         }
 
-
-        if (
-            text.includes("distance") ||
-            text.includes("how far")
-        ) {
-
-            this.describeDistance();
-
-            return;
-
-        }
-
-
-        if (
-            text.includes("status")
-        ) {
-
-            Voice.speak(
-                "Spider AI is online."
+        if (items.length === 2) {
+            return (
+                items[0] +
+                " and " +
+                items[1]
             );
-
-            return;
-
         }
 
 
-        Voice.speak(
-            "I heard " + command
+        return (
+            items
+                .slice(0, -1)
+                .join(", ") +
+            ", and " +
+            items[items.length - 1]
         );
 
     },
@@ -194,7 +201,7 @@ window.SpiderAI = {
         if (!this.currentTarget) {
 
             Voice.speak(
-                "I don't currently see a target."
+                "I don't currently see a clear target."
             );
 
             return;
@@ -202,20 +209,19 @@ window.SpiderAI = {
         }
 
 
-        const name =
-            this.currentTarget.name;
+        const target =
+            this.currentTarget;
 
 
         const confidence =
             Math.round(
-                this.currentTarget
-                    .confidence * 100
+                target.confidence * 100
             );
 
 
         Voice.speak(
             "I see a " +
-            name +
+            target.name +
             " with " +
             confidence +
             " percent confidence."
@@ -240,14 +246,119 @@ window.SpiderAI = {
 
 
         Voice.speak(
-            "The distance is " +
+            "The estimated distance is " +
             Distance.lastDistance
                 .toFixed(1) +
             " meters."
+        );
+
+    },
+
+
+    handleCommand(command) {
+
+        if (!command) {
+            return;
+        }
+
+
+        console.log(
+            "VOICE COMMAND:",
+            command
+        );
+
+
+        const text =
+            command
+                .toLowerCase()
+                .trim();
+
+
+        if (
+            text.includes(
+                "what do you see"
+            ) ||
+            text.includes(
+                "what can you see"
+            ) ||
+            text.includes(
+                "what am i looking at"
+            ) ||
+            text.includes(
+                "what's in front"
+            ) ||
+            text.includes(
+                "what is in front"
+            )
+        ) {
+
+            Voice.speak(
+                this.getObjectSummary()
+            );
+
+            return;
+
+        }
+
+
+        if (
+            text.includes(
+                "distance"
+            ) ||
+            text.includes(
+                "how far"
+            )
+        ) {
+
+            this.describeDistance();
+
+            return;
+
+        }
+
+
+        if (
+            text.includes(
+                "how many"
+            ) ||
+            text.includes(
+                "count"
+            )
+        ) {
+
+            Voice.speak(
+                this.getObjectSummary()
+            );
+
+            return;
+
+        }
+
+
+        if (
+            text.includes(
+                "status"
+            )
+        ) {
+
+            Voice.speak(
+                "Spider AI is online and scanning."
+            );
+
+            return;
+
+        }
+
+
+        Voice.speak(
+            "I heard you say " +
+            command
         );
 
     }
 
 };
 
-console.log("AI CORE: loaded");
+console.log(
+    "AI V2.1: loaded"
+);
